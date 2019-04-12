@@ -1,0 +1,15 @@
+Package: copSTM
+Type: Package
+Title: (copula-based) Multivariate Spatio-Temporal Modelling of count data
+Version: 1.0
+Date: 2019-04-05
+Authors@R: person("PuXue", "Qiao", role = c("aut", "cre"),
+            email = "pqiao@student.unimelb.edu.au")
+Description: copSTM provides R functions for parameter estimation and variable selection of multivariate spatio-temporal models on grouped count data.
+Depends: R (>= 2.10.0)
+License: GPL-2
+Imports: Rcpp (>= 1.0.1)
+LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 6.1.1
+LazyData: true 
+Encoding: UTF-8
