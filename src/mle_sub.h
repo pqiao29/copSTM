@@ -11,7 +11,7 @@ Rcpp::List mle_sub(double& l, const arma::mat& xx, const arma::vec& y,
                   arma::vec beta, std::vector<double> rho_v,
                   const arma::Col<int>& v_main, const arma::Col<int>& v_rho,
                   const std::multimap<int, std::vector<int> >& labeled_pairs,
-                  double eps, int maxit = 10);
+                  int maxit, double eps);
 
 
 #endif // _MLE_SUBCPP_H

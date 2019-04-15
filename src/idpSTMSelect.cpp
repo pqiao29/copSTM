@@ -20,7 +20,7 @@ void gen_model(arma::uvec& v, double& OldCrt,
                std::map< std::vector<int>, int>& CandidateModels, 
                std::map< std::vector<int>, double>& CriterionRecord,
                const arma::vec& theta, const int& p, const arma::vec& skip, 
-               const arma::mat& x, const arma::mat& y){
+               const arma::mat& x, const arma::mat& y, const int maxit){
   
   double crt, lik; 
   auto it = skip.cbegin();
@@ -31,7 +31,7 @@ void gen_model(arma::uvec& v, double& OldCrt,
       // get crt for alternative v
       auto v_key_iter = CriterionRecord.find(arma::conv_to<std::vector<int> >::from(v)); 
       if(v_key_iter == CriterionRecord.end()){
-        lik = Poisson_Newton(x, y, theta, v);
+        lik = Poisson_Newton(x, y, theta, v, maxit);
         crt = 2*lik + log(y.size()) * sum(v);
         CriterionRecord.insert(std::make_pair(arma::conv_to<std::vector<int> >::from(v), crt));
       }else{
@@ -57,14 +57,15 @@ void gen_model(arma::uvec& v, double& OldCrt,
 }
 
 // [[Rcpp::export]]
-Rcpp::List logGLMselect_cpp(const arma::vec& y, const arma::mat& x,
+Rcpp::List logGLMselect_cpp(const arma::vec& y, const arma::mat& x, const int maxit, 
                             const arma::vec& skip, const int ModelCnt, bool Message){
   
   // full model
-  int p = x.n_cols; 
+  int p = x.n_cols, tmp_maxit = maxit; bool happy = true;
   arma::vec theta(p, arma::fill::zeros); theta(0) = sum(y)/x.n_rows;
-  double lik = Poisson_Newton(x, y, theta); //override theta
+  double lik = Poisson_Newton(x, y, theta, tmp_maxit, happy); //override theta
   double crt = 2*lik + log(y.n_rows) * p;
+  if(Message) Rcpp::Rcout << "glm initial converged in " << maxit - tmp_maxit << " iterations" << std::endl;
   
   // model selection
   arma::uvec v(p, arma::fill::ones);
@@ -74,7 +75,7 @@ Rcpp::List logGLMselect_cpp(const arma::vec& y, const arma::mat& x,
   std::map< std::vector<int>, int> CandidateModels;
   
   for(int iteration = 0; iteration != ModelCnt; ++iteration){
-    gen_model(v, crt, CandidateModels, CriterionRecord, theta, p, skip, x, y); // override v_k, crt, CandidateModels, CriterionRecord
+    gen_model(v, crt, CandidateModels, CriterionRecord, theta, p, skip, x, y, maxit); // override v_k, crt, CandidateModels, CriterionRecord
   }
   
   std::multimap<int, std::vector<int> > Generated_Models = swapPairs(CandidateModels);
@@ -100,7 +101,7 @@ Rcpp::List logGLMselect_cpp(const arma::vec& y, const arma::mat& x,
   
   //record
   v = arma::conv_to<arma::uvec>::from(selected);
-  lik = Poisson_Newton(x, y, theta, v); // overide tmp_theta
+  lik = Poisson_Newton(x, y, theta, v, maxit); // overide tmp_theta
   arma::mat hessian(sum(v), sum(v)); 
   get_hessian(x, y, theta, v, hessian); //override hessian
   
@@ -113,7 +114,7 @@ Rcpp::List logGLMselect_cpp(const arma::vec& y, const arma::mat& x,
 
 
 // [[Rcpp::export]]
-Rcpp::List idpSTModelSelection_cpp(const arma::mat& dat, int n, int ModelCnt, bool Message){  
+Rcpp::List idpSTModelSelection_cpp(const arma::mat& dat, int n, const int maxit,int ModelCnt, bool Message){  
   
   auto in_data = data_indpt(dat, n);
   
@@ -129,7 +130,7 @@ Rcpp::List idpSTModelSelection_cpp(const arma::mat& dat, int n, int ModelCnt, bo
     
     if(Message) Rcpp::Rcout << "Sensitivity of group "<< k + 1<< ": " << std::endl; 
     
-    auto tmp = logGLMselect_cpp(y.col(k), x, skip, ModelCnt, Message);
+    auto tmp = logGLMselect_cpp(y.col(k), x, maxit, skip, ModelCnt, Message);
     
     if(Message) Rcpp::Rcout << std::endl;
    

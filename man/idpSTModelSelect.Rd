@@ -4,12 +4,14 @@
 \alias{idpSTModelSelect}
 \title{Model selsction of spatio-temporal model}
 \usage{
-idpSTModelSelect(data, n, ModelCnt, Message = F)
+idpSTModelSelect(data, n, maxit, ModelCnt, Message = F)
 }
 \arguments{
 \item{data}{A matrix with four cloumns: time, x, y, group, where x and y are coordinates of location.}
 
 \item{n}{An integer number indicating size of the grids. The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)}
+
+\item{maxit}{Maximum number of iterations of maximum likelihood estimation.}
 
 \item{ModelCnt}{The number of models to be generated via Gibbs samplling.}
 
@@ -34,7 +36,7 @@ A list with components
 \examples{
 n <- 25
 data("cell_growth_data") 
-select_est <- idpSTModelSelect(cell_growth_data, 25, ModelCnt = 20, Message = FALSE)
+select_est <- idpSTModelSelect(cell_growth_data, n, maxit = 30, ModelCnt = 20, Message = FALSE)
 print("======= Selected model =======")
 print(select_est$selected_model)
 print("======= Estimates =======")

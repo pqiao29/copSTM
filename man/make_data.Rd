@@ -18,5 +18,5 @@ A list with components: response, covariates, T (the number of time points) and 
 \code{make_data} takes a matrix of spatio-temporal data and returns a reorganized data ready for input of \code{copSTM} or \code{copSTModelSelect}.
 }
 \seealso{
-\code{\link{copSTM_fit}}, \code{\link{copSTModelSelect}}
+\code{\link{copSTM}}, \code{\link{copSTModelSelect}}
 }

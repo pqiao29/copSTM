@@ -51,7 +51,7 @@ Rcpp::List data_indpt(const arma::mat& dat, const int n){
 } 
 
 // [[Rcpp::export]]
-Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice){
+Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice, const int maxit){
   
   /*
    * Requirement of data columns: Timepoint (0, 1, 2, ...), group (1, 2, 3, ...), tile (1, 2, ... n*n)
@@ -66,13 +66,15 @@ Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice){
   arma::rowvec beta0(K); arma::mat beta(K, K); arma::mat se((K + 1), K);
   int ind_b0 = 0;
   for(int k = 0; k != K; ++k){
+    int tmp_maxit = maxit; bool happy = true;
     // est
     int p = x.n_cols;
     arma::vec theta(p); theta.zeros();
     theta(0) = sum(y.col(k))/y.size();
     
-    double l = Poisson_Newton(x, y.col(k), theta);
-    
+    double l = Poisson_Newton(x, y.col(k), theta, tmp_maxit, happy);
+    //if(!happy) throw Rcpp::exception("Unsuccessful glm fit.", false);
+
     beta0(ind_b0++) = theta(0);
     beta.col(k) = theta.tail(K);
     lik += l;

@@ -4,12 +4,15 @@
 \alias{logGLMselect}
 \title{Model selsction of log-GLM}
 \usage{
-logGLMselect(y, x, skip = NULL, ModelCnt = 20, Message = T)
+logGLMselect(y, x, maxit = 50, skip = NULL, ModelCnt = 20,
+  Message = T)
 }
 \arguments{
 \item{y}{A vector of count data response.}
 
 \item{x}{A matrix of covariates.}
+
+\item{maxit}{Maximum number of iterations of maximum likelihood estimation.}
 
 \item{skip}{A vector of indices of predictors to be forced in the selected model.}
 

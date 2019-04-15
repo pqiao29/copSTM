@@ -27,7 +27,7 @@ tilling <- function(data, n){
 #'
 #' @return A list with components: response, covariates, T (the number of time points) and K (the number of groups).
 #'
-#' @seealso \code{\link{copSTM_fit}}, \code{\link{copSTModelSelect}}
+#' @seealso \code{\link{copSTM}}, \code{\link{copSTModelSelect}}
 
 make_data <- function(data, n){
   dat = tilling(data, n)
@@ -49,7 +49,7 @@ make_data <- function(data, n){
 #'
 #' @return Data ready to input to \code{copSTM} or \code{copSTModelSelect}.
 #' 
-#' @seealso \code{\link{copSTM_fit}}, \code{\link{copSTModelSelect}}
+#' @seealso \code{\link{copSTM}}, \code{\link{copSTModelSelect}}
 
 sim_data <- function(y_ini, n, K, t_size, beta, rho_v){
   return(sim_data_cpp(y_ini, n, K, t_size, beta, rho_v))

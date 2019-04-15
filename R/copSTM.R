@@ -4,6 +4,7 @@
 #' @param y A vector of count data response.  
 #' @param K The number of groups.
 #' @param n An integer number, the image is tilled into n*n grids.  
+#' @param maxit Maximum number of iterations of maximum likelihood estimation. 
 #' @param B The number of bootstrap samples to be generated for computing the standard error of parameters. (Must be set if \code{std_err == TRUE}) 
 #' @param Message_prog Logical, if TRUE, prints messages indicating progress. (Suggest on if long computational time is expected)
 #' @param std_err Logical, if TRUE returns bootstrapped standard errors of parameters. 
@@ -28,18 +29,21 @@
 #' true_beta <- c(-1, 1, 0.5, -0.5, 0, 1)
 #' true_rho <- c(-0.3, 0, 0.3, 0)
 #' sim_dat <- sim_data(10, n, K, t_size, true_beta, true_rho) # in the same form returned by make_data
-#' est_cop_sim <- copSTM_fit(sim_dat$covariates, sim_dat$response, K, n, 
-#' std_err = TRUE, B = 50, Message_prog = TRUE)
+#' est_cop_sim <- copSTM(sim_dat$covariates, sim_dat$response, K, n, maxit = 50,
+#' std_err = FALSE) # without standard error
 #' print(est_cop_sim$coefficients)
-#' print(est_cop_sim$standard_error)
+#' \dontrun{
+#' est_cop_sim <- copSTM(sim_dat$covariates, sim_dat$response, K, n, maxit = 50,
+#' std_err = TRUE, B = 50, Message_prog = TRUE) # with standard error
+#' print(est_cop_sim$standard_error)}
 #' 
 #' ### with example data (expected around 40s)
+#' \dontrun{
 #' data("cell_growth_data") 
 #' n <- 25
 #' dat <- make_data(cell_growth_data, n)
 #' K <- dat$K
-#' est_cop_real <- copSTM_fit(dat$covariates, dat$response, dat$K, n)
-#' est_cop_real <- copSTM_fit(dat$covariates, dat$response, dat$K, n)
+#' est_cop_real <- copSTM(dat$covariates, dat$response, dat$K, n, maxit = 50)
 #' print(est_cop_real$coefficients$main_effects)
 #' cor0 <- matrix(NA, K, K)
 #' cor1 <- matrix(NA, K, K)
@@ -62,17 +66,18 @@
 #' print(round(cor0, 3))
 #' print("correlation in neighbouring tiles: ")
 #' print(round(cor1, 3))
+#' }
 #' 
 #' @seealso \code{\link{sim_data}}, \code{\link{make_data}}
 
-copSTM_fit <- function(x, y, K, n, eps = 0.1, std_err = F, B = 0, Message_prog = F){
+copSTM <- function(x, y, K, n, maxit, eps = 0.1, std_err = F, B = 0, Message_prog = F){
   
   if(std_err && !(B > 0)){
     print("positive B required")
     return(NULL)
   }
   
-  res <- copSTM_cpp(x, y, K, n, eps, std_err, B, Message_prog)
+  res <- copSTM_cpp(x, y, K, n, maxit, eps, std_err, B, Message_prog)
   
   regres_par <- matrix(res$main, (K + 1), K)
   ret_est <- list("intercept" = regres_par[1, ], "main_effects" = regres_par[-1, ], 
@@ -105,7 +110,10 @@ copSTM_fit <- function(x, y, K, n, eps = 0.1, std_err = F, B = 0, Message_prog =
 #' @param K The number of groups.
 #' @param n An integer number, the image is tilled into n*n grids.  
 #' @param ModelCnt The number of models to be generated via Gibbs samplling.  
-#' @param B  The number of bootstrap samples to be generated for computing the penalty in CL-BIC and standard error of parameters. 
+#' @param B  The number of bootstrap samples to be generated for computing the penalty in CL-BIC and standard error of parameters.
+#' @param maxit1 The maximum number of iterations of maximum likelihood estimation (for full model).
+#' @param maxit2 The maximum number of iterations of maximum likelihood estimation (for sub-models),
+#'  expect to be much smaller than maxit1, since submodels take estimates from the full model as initial values.
 #' @param add_penalty A tunning parameter to enforce sparsity. The larger this value is, the more favorable a sparse model becomes. 
 #' @param Message_prog Logical, if TRUE, prints messages indicating progress. (Suggest on if long computational time is expected)
 #' @param Message_res Logical, if TRUE, prints the top 5 most frequently generated models. 
@@ -125,6 +133,7 @@ copSTM_fit <- function(x, y, K, n, eps = 0.1, std_err = F, B = 0, Message_prog =
 #' }
 #' 
 #' @examples
+#' \dontrun{
 #' set.seed(444)
 #' K <- 2  # number of groups
 #' n <- 10 # (squared root of) number of tiles
@@ -147,15 +156,16 @@ copSTM_fit <- function(x, y, K, n, eps = 0.1, std_err = F, B = 0, Message_prog =
 #' as.numeric(as.logical(c(true_beta, true_rho)))
 #' print(select_est$coefficients)
 #' print(select_est$standard_error)
+#' }
 #' 
 #' @seealso \code{\link{sim_data}}, \code{\link{make_data}}
 
 
-copSTModelSelect <- function(x, y, K, n, ModelCnt, B, 
-                             add_penalty = 0, Message_prog = T, Message_res = T, 
-                             std_err = T, eps = 0.1){
+copSTModelSelect <- function(x, y, K, n, ModelCnt, B, maxit1 = 50, maxit2 = 10, 
+                             add_penalty = 0, Message_prog = TRUE, Message_res = TRUE, 
+                             std_err = TRUE, eps = 0.1){
   
-  res <- copSTModelSelect_cpp(x, y, K, n, ModelCnt, B, add_penalty, Message_prog, 
+  res <- copSTModelSelect_cpp(x, y, K, n, ModelCnt, B, maxit1, maxit2, add_penalty, Message_prog, 
                                Message_res, std_err, eps)
   regres_par <- matrix(res$main, (K + 1), K)
   

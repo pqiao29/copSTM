@@ -28,7 +28,7 @@ std::multimap<T2, T1> swapPairs(std::map<T1, T2> m) {
 void ModelSelection(std::vector<int>& v, double& OldCriterion,
                     std::map< std::vector<int>, int>& CandidateModels,
                     std::map< std::vector<int>, double>& CriterionRecord,
-                    int B,  double eps,
+                    int B, int maxit, double eps,
                     const int n, int d,const int t_size, const int K,
                     const arma::mat& xx, const arma::vec& y, const arma::vec& y_0,
                     const arma::vec& beta, const std::vector<double>& rho_v,
@@ -55,7 +55,7 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
         
         int p_main_sub = sum(v_main), p_sub = p_main_sub + sum(v_rho);
         
-        mle_sub(lik, xx, y, beta, rho_v, v_main, v_rho, labeled_pairs, eps); // override lik
+        mle_sub(lik, xx, y, beta, rho_v, v_main, v_rho, labeled_pairs, maxit, eps); // override lik
         
         // make correlation matrix with zeros in rho
         if(!isnan(lik) && !isinf(lik)){
@@ -110,7 +110,7 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
                     std::map< std::vector<int>, int>& CandidateModels,
                     std::map< std::vector<int>, arma::vec>& ModelStdErr,
                     std::map< std::vector<int>, double>& CriterionRecord,
-                    int B,  double eps,
+                    int B, int maxit, double eps,
                     const int n, int d,const int t_size, const int K,
                     const arma::mat& xx, const arma::vec& y, const arma::vec& y_0,
                     const arma::vec& beta, const std::vector<double>& rho_v,
@@ -138,7 +138,7 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
         
         int p_main_sub = sum(v_main), p_sub = p_main_sub + sum(v_rho);
         
-        mle_sub(lik, xx, y, beta, rho_v, v_main, v_rho, labeled_pairs, eps); // override lik
+        mle_sub(lik, xx, y, beta, rho_v, v_main, v_rho, labeled_pairs, maxit, eps); // override lik
         
         // make correlation matrix with zeros in rho
         if(!isnan(lik) && !isinf(lik)){
@@ -192,14 +192,20 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
 
 // [[Rcpp::export]]
 Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, int K, int n, 
-                                int ModelCnt, int B, const double add_penalty = 0, 
+                                int ModelCnt, int B, int maxit1, int maxit2, 
+                                const double add_penalty = 0, 
                                 bool Message_prog = true, bool Message_res = true,
                                 bool std_err = false, double eps = 0.1){  
   
   // Input xx need to include the 1 column for intercept
   int d = K*n*n, p_main = x.n_cols; 
   // Initialize
-  arma::vec beta = PoissonRegression(x, y)["paramters"];
+  int tmp_maxit = maxit1;
+  auto ini = PoissonRegression(x, y, maxit1); //overwrite maxit1
+  if(!ini["happyending"]) throw Rcpp::exception("Unsuccessful glm fit.", false);
+  arma::vec beta = ini["paramters"];
+  if(Message_prog) Rcpp::Rcout << "glm initial converged in " << tmp_maxit - maxit1 << " iterations" << std::endl;
+  
   //labeled_pairs
   int t_size = y.size()/d, p_rho;
   const std::multimap<int, std::vector<int> > labeled_pairs = get_pairs(K, n, p_rho, t_size); //override p_rho
@@ -207,7 +213,7 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, int K, i
   int p = p_rho + p_main;
   
   // Full model 
-  double lik = mle(x, y, beta, rho_v, labeled_pairs, eps); // override beta0, beta, rho_v
+  double lik = mle(x, y, beta, rho_v, labeled_pairs, maxit1, eps); // override beta0, beta, rho_v
   
   const std::multimap<int, std::vector<int> > labeled_pairs0 = get_pairs(K, n, p_rho); 
   arma::mat corr = cor_mat(rho_v, labeled_pairs0, d);
@@ -228,14 +234,14 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, int K, i
   
   if(std_err){
     for(int iteration = 0; iteration != ModelCnt; ++iteration){
-      ModelSelection( v, criterion, CandidateModels, ModelStdErr, CriterionRecord, B, eps, 
+      ModelSelection( v, criterion, CandidateModels, ModelStdErr, CriterionRecord, B, maxit2, eps, 
                       n, d, t_size, K, x, y, y_0, beta, rho_v, p, p_main, 
                       labeled_pairs, labeled_pairs0, add_penalty, iteration, Message_prog);
       // override v, OldCriterion, CriterionRecord, CandidateModels and ModelStdErr
     }
   }else{
     for(int iteration = 0; iteration != ModelCnt; ++iteration){
-      ModelSelection( v, criterion, CandidateModels, CriterionRecord, B, eps, 
+      ModelSelection( v, criterion, CandidateModels, CriterionRecord, B, maxit2, eps, 
                       n, d, t_size, K, x, y, y_0, beta, rho_v, p, p_main, 
                       labeled_pairs, labeled_pairs0, add_penalty, iteration, Message_prog);
       // override v, OldCriterion, CriterionRecord, CandidateModels
@@ -267,7 +273,7 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, int K, i
   // fit selected model again ofr output
   arma::Col<int> v_main(std::vector<int>(selected.cbegin(), selected.cbegin() + p_main)), 
                  v_rho(std::vector<int>(selected.cbegin() + p_main, selected.cend()));
-  auto tmp_theta = mle_sub(lik, x, y, beta, rho_v, v_main, v_rho, labeled_pairs, eps);
+  auto tmp_theta = mle_sub(lik, x, y, beta, rho_v, v_main, v_rho, labeled_pairs, maxit2, eps);
 
   if(std_err){
     // extract standard error from ModelStdErr

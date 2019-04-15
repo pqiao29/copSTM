@@ -77,14 +77,15 @@ void get_hessian(const mat& xx, const vec& y, const vec& theta, const uvec& v, m
   }
 }
 
-double Poisson_Newton(const mat& xx, const vec& y, vec& theta, bool happy = true){
+double Poisson_Newton(const mat& xx, const vec& y, vec& theta, 
+                      int& max_iterations, bool& happy){
   //Initialize paramters 
   int p = theta.size();
   rowvec score(p);
   mat hessian(p, p);
   
   // Prepre for mle
-  int iteration = 0, max_iterations = 30;
+  int iteration = 0;
   double lcrit = 1, lik = 0;
   double oldlik = pois_inference(xx, y, theta, score, hessian);
   
@@ -141,10 +142,14 @@ double Poisson_Newton(const mat& xx, const vec& y, vec& theta, bool happy = true
       return lik;
     }
   }
+  
+  if(iteration == max_iterations || !happy) Rcpp::warning("Maximum likelihood esimation not converged"); else max_iterations -= iteration;
+  
   return lik;
   }
 
-double Poisson_Newton(const mat& xx, const vec& y, const vec& theta, const uvec& v_k, bool happy = true){
+double Poisson_Newton(const mat& xx, const vec& y, const vec& theta, const uvec& v_k, 
+                      const int max_iterations, bool happy = true){
   //Initialize paramters 
   int p = sum(v_k);
   rowvec score(p);
@@ -152,7 +157,7 @@ double Poisson_Newton(const mat& xx, const vec& y, const vec& theta, const uvec&
   vec tmp_theta = theta % v_k;
   
   // Prepre for mle
-  int iteration = 0, max_iterations = 30;
+  int iteration = 0;
   double lcrit = 1, lik = 0;
   double oldlik = pois_inference(xx, y, tmp_theta, v_k, score, hessian);
   
@@ -212,10 +217,13 @@ double Poisson_Newton(const mat& xx, const vec& y, const vec& theta, const uvec&
       return lik;
     }
   }
+  if(iteration == max_iterations || !happy) Rcpp::warning("Maximum likelihood esimation not converged"); 
+  
   return lik;
 }
 
-void Poisson_Newton(const mat& xx, const vec& y, vec& theta, const uvec& v_k, bool happy = true){
+double Poisson_Newton(const mat& xx, const vec& y, vec& theta, const uvec& v_k, 
+                    const int max_iterations, bool happy = true){
   //Initialize paramters 
   int p = sum(v_k);
   rowvec score(p);
@@ -223,7 +231,7 @@ void Poisson_Newton(const mat& xx, const vec& y, vec& theta, const uvec& v_k, bo
   theta = theta % v_k;
   
   // Prepre for mle
-  int iteration = 0, max_iterations = 30;
+  int iteration = 0;
   double lcrit = 1, lik = 0;
   double oldlik = pois_inference(xx, y, theta, v_k, score, hessian);
   
@@ -237,7 +245,7 @@ void Poisson_Newton(const mat& xx, const vec& y, vec& theta, const uvec& v_k, bo
       Rcpp::Rcout << "The Newton-Raphson algorithm encountered values that "
                   << "produced illegal derivatives." << std::endl;
       happy = false; 
-      return ;
+      return lik;
     }
     
     ++iteration;
@@ -251,7 +259,7 @@ void Poisson_Newton(const mat& xx, const vec& y, vec& theta, const uvec& v_k, bo
     if (BAD(lcrit, 0.5e-5)) { 
       if (std::isfinite(lik)) {
         if (directional_derivative < 0) {
-          if (fabs(directional_derivative) < 1e-5) return;
+          if (fabs(directional_derivative) < 1e-5) return lik;
         }
       }
       
@@ -270,7 +278,7 @@ void Poisson_Newton(const mat& xx, const vec& y, vec& theta, const uvec& v_k, bo
         Rcpp::Rcout << "The Hessian matrix is not positive definite in "
                     << "newton_raphson_min." << std::endl;
         happy = false;
-        return;
+        return lik;
       }
     }
     oldlik = lik;
@@ -280,18 +288,21 @@ void Poisson_Newton(const mat& xx, const vec& y, vec& theta, const uvec& v_k, bo
     }
   }
   
+  // No warnings generated, since this function is only called for selected model
+  
+  return lik;
 }
 
 
-Rcpp::List PoissonRegression(const arma::mat& xx, const arma::vec& y){
+Rcpp::List PoissonRegression(const arma::mat& xx, const arma::vec& y, int& maxit){
   int p = xx.n_cols;
   vec theta(p); theta.zeros();
       theta(0) = sum(y)/y.size();
   bool happy = true; 
-  double l = Poisson_Newton(xx, y, theta, happy);
+  double l = Poisson_Newton(xx, y, theta, maxit, happy); // override maxit to iterations left
   
   return Rcpp::List::create(Rcpp::Named("likelihood") = l, 
                             Rcpp::Named("paramters") = theta, 
-                            Rcpp::Named("happyending") = happy 
+                            Rcpp::Named("happyending") = happy
                              );
 }

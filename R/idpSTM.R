@@ -5,6 +5,7 @@
 #' 
 #' @param data A matrix with four cloumns: time, x, y, group, where x and y are coordinates of location.
 #' @param n An integer number indicating size of the grids. The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)
+#' @param maxit Maximum number of iterations of maximum likelihood estimation. 
 #' 
 #' @return A list with components
 #' \itemize{
@@ -19,18 +20,18 @@
 #' @examples
 #' n <- 25
 #' data("cell_growth_data")
-#' est <- idpSTM(cell_growth_data, n)
+#' est <- idpSTM(cell_growth_data, n, maxit = 30)
 #' print("======= Estimates =======")
 #' print(est$coefficients)
 #' print("======= Standard errors =======")
 #' print(est$standard_error)
 
-idpSTM <- function(data, n){
+idpSTM <- function(data, n, maxit){
   
   K <- max(data[, 4])
   
   dat <- tilling(data, n)
-  res <- idptSTM_cpp(dat, n)
+  res <- idptSTM_cpp(dat, n, maxit)
   
   ret_est <- list("intercept" = res$intercept, "main_effects" = res$main_effects)
   
@@ -49,6 +50,7 @@ idpSTM <- function(data, n){
 #'
 #' @param data A matrix with four cloumns: time, x, y, group, where x and y are coordinates of location.
 #' @param n An integer number indicating size of the grids. The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)
+#' @param maxit Maximum number of iterations of maximum likelihood estimation. 
 #' @param ModelCnt The number of models to be generated via Gibbs samplling. 
 #' @param Message Logical, if TRUE, prints the top 5 most frequently generated models. 
 #'
@@ -67,7 +69,7 @@ idpSTM <- function(data, n){
 #' @examples
 #' n <- 25
 #' data("cell_growth_data") 
-#' select_est <- idpSTModelSelect(cell_growth_data, 25, ModelCnt = 20, Message = FALSE)
+#' select_est <- idpSTModelSelect(cell_growth_data, n, maxit = 30, ModelCnt = 20, Message = FALSE)
 #' print("======= Selected model =======")
 #' print(select_est$selected_model)
 #' print("======= Estimates =======")
@@ -75,10 +77,10 @@ idpSTM <- function(data, n){
 #' print("======= Standard errors =======")
 #' print(select_est$standard_error)
 
-idpSTModelSelect <- function(data, n, ModelCnt, Message = F){
+idpSTModelSelect <- function(data, n, maxit, ModelCnt, Message = F){
   
   dat <- tilling(data, n)
-  res <- idpSTModelSelection_cpp(dat, n, ModelCnt, Message)
+  res <- idpSTModelSelection_cpp(dat, n, maxit, ModelCnt, Message)
   
   ret_est <- list("intercept" = res$parameters[1, ], "main_effects" = res$parameters[-1, ])
   ret_se <- list("intercept" = sqrt(res$se[1, ]), "main_effects" = sqrt(res$se[-1, ]))
@@ -94,6 +96,7 @@ idpSTModelSelect <- function(data, n, ModelCnt, Message = F){
 #'
 #' @param y A vector of count data response.  
 #' @param x A matrix of covariates. 
+#' @param maxit Maximum number of iterations of maximum likelihood estimation. 
 #' @param skip A vector of indices of predictors to be forced in the selected model.
 #' @param ModelCnt The number of models to be generated via Gibbs samplling.  
 #' @param Message Logical, if TRUE, prints the top 5 most frequently generated models. (Suggest on)
@@ -124,7 +127,7 @@ idpSTModelSelect <- function(data, n, ModelCnt, Message = F){
 #' obj <- logGLMselect(y, x, skip = NULL, ModelCnt = 500, Message = TRUE)
 #' cat("true model:", c(1, as.numeric(as.logical(true_beta))), "\n")
 
-logGLMselect <- function(y, x, skip = NULL, ModelCnt = 20, Message = T){
+logGLMselect <- function(y, x, maxit = 50, skip = NULL, ModelCnt = 20, Message = T){
   
   if(nrow(x) != length(y)){ stop(" x must have the same number of rows as y")}
   if(!length(skip)){ skip = 0 }else{ 
@@ -132,7 +135,7 @@ logGLMselect <- function(y, x, skip = NULL, ModelCnt = 20, Message = T){
     skip = skip - 1} 
   if(length(unique(x[, 1])) > 1) x <- cbind(rep(1, nrow(x)), x)
   
-  res <- logGLMselect_cpp(y, x, skip, ModelCnt, Message)
+  res <- logGLMselect_cpp(y, x, maxit, skip, ModelCnt, Message)
   
   ret_se <- rep(0, ncol(x))
   ret_se[which(res$v == 1)] <- sqrt(res$se)

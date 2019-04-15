@@ -1,3 +1,4 @@
 useDynLib(copSTM, .registration=TRUE)
 importFrom(Rcpp, evalCpp)
 export(idpSTM,idpSTModelSelect,logGLMselect, make_data, copSTM_fit, copSTModelSelect, sim_data)
+export(idpSTM,idpSTModelSelect,logGLMselect, make_data, copSTM, copSTModelSelect, sim_data)

@@ -26,5 +26,5 @@ Data ready to input to \code{copSTM} or \code{copSTModelSelect}.
 Simulate data for testing \code{copSTM} and \code{copSTModelSelect}.
 }
 \seealso{
-\code{\link{copSTM_fit}}, \code{\link{copSTModelSelect}}
+\code{\link{copSTM}}, \code{\link{copSTModelSelect}}
 }

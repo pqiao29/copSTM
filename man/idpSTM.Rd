@@ -4,12 +4,14 @@
 \alias{idpSTM}
 \title{Fit spatio-temporal Model}
 \usage{
-idpSTM(data, n)
+idpSTM(data, n, maxit)
 }
 \arguments{
 \item{data}{A matrix with four cloumns: time, x, y, group, where x and y are coordinates of location.}
 
 \item{n}{An integer number indicating size of the grids. The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)}
+
+\item{maxit}{Maximum number of iterations of maximum likelihood estimation.}
 }
 \value{
 A list with components
@@ -29,7 +31,7 @@ and fit a model of spatial neighbourhood impact between groups over time.
 \examples{
 n <- 25
 data("cell_growth_data")
-est <- idpSTM(cell_growth_data, n)
+est <- idpSTM(cell_growth_data, n, maxit = 30)
 print("======= Estimates =======")
 print(est$coefficients)
 print("======= Standard errors =======")

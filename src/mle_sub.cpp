@@ -7,30 +7,22 @@
 #include "score_hessian.h"
 #include "lik.h"
 
-#include <Rcpp.h>
-using namespace Rcpp;
 #include <vector>
-using std::vector;
 #include <map>
-using std::map;  using std::multimap;
-#include <iostream>
-using std::endl;
-#include <iterator>
-using std::back_inserter;
 
 // [[Rcpp::plugins(cpp11)]]
 Rcpp::List mle_sub(double& l, const arma::mat& xx, const arma::vec& y, 
-                   arma::vec beta, vector<double> rho_v, 
+                   arma::vec beta, std::vector<double> rho_v, 
                    const arma::Col<int>& v_main, const arma::Col<int>& v_rho,
-                   const multimap<int, vector<int> >& labeled_pairs,
-                   double eps, int maxit = 20){ // override l
+                   const std::multimap<int, std::vector<int> >& labeled_pairs,
+                   int maxit, double eps){ // override l
   
   int p_main = sum(v_main), p = p_main + sum(v_rho);
   arma::vec beta_sub = beta % v_main;
   // theta (concatenaing beta0, beta, rho_v)
   arma::vec theta(nonzeros(beta_sub));
   arma::vec rho_zeros = arma::vec(rho_v) % v_rho;
-  rho_v = arma::conv_to<vector<double> >::from(rho_zeros);
+  rho_v = arma::conv_to<std::vector<double> >::from(rho_zeros);
   theta = arma::join_cols(theta, nonzeros(rho_zeros));
 
   bool converged = false; 
@@ -38,14 +30,14 @@ Rcpp::List mle_sub(double& l, const arma::mat& xx, const arma::vec& y,
   arma::vec score(p);  arma::mat hessian(p, p); 
   int iteration = 0; 
   
-  while(!converged && iteration++ < maxit){
+  while(!converged && iteration++ != maxit){
     // Bounds for integrals in Gaussian cdf
     const arma::vec y_minus1 = y - 1;
-    vector<double> lower_bd = bound(xx, y_minus1, beta_sub), 
-                   upper_bd = bound(xx, y, beta_sub);
+    std::vector<double> lower_bd = bound(xx, y_minus1, beta_sub), 
+                        upper_bd = bound(xx, y, beta_sub);
     
-    vector<vector<double> > upper_bdd = get_bd_deriv_arma_sub(xx, y, true, beta_sub, v_main),
-                            lower_bdd = get_bd_deriv_arma_sub(xx, y, false, beta_sub, v_main);
+    std::vector<std::vector<double> > upper_bdd = get_bd_deriv_arma_sub(xx, y, true, beta_sub, v_main),
+                                      lower_bdd = get_bd_deriv_arma_sub(xx, y, false, beta_sub, v_main);
     
     // Update
     score.zeros(); hessian.zeros();
@@ -58,7 +50,7 @@ Rcpp::List mle_sub(double& l, const arma::mat& xx, const arma::vec& y,
     arma::Col<int>::const_iterator main_ptr = v_main.cbegin(), 
                                    rho_ptr = v_rho.cbegin();
     arma::vec::iterator beta_ptr = beta_sub.begin(); 
-    vector<double>::iterator rho_v_ptr = rho_v.begin();
+    std::vector<double>::iterator rho_v_ptr = rho_v.begin();
     
     while(main_ptr != v_main.cend()){
       if(*main_ptr++)
@@ -74,14 +66,17 @@ Rcpp::List mle_sub(double& l, const arma::mat& xx, const arma::vec& y,
     // Check convergence
     l = lik(rho_v, labeled_pairs, lower_bd, upper_bd);
     if(!std::isnan(l) && !std::isinf(l)){
-      if(abs(l - l_prev) < eps){
+      if(std::abs(l - l_prev) < eps){
         converged = true;
       }
       l_prev = l; 
     }else break;
   
   }
- 
+  
+  // No warning generated if not converged. 
+  // If full model estimation is successful while a submodel is not, then this submodel should not be selected
+  
   return Rcpp::List::create(Rcpp::Named("beta") = beta_sub,
                             Rcpp::Named("rho") = rho_v );
 }
