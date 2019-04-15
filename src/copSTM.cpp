@@ -12,25 +12,25 @@
 #include "make_cor.h"
 
 #include <vector>
-using std::vector;
 #include <map>
-using std::map;  using std::multimap;
 
 // [[Rcpp::plugins(cpp11)]]
 
 
 // [[Rcpp::export]]
 Rcpp::List copSTM_cpp(const arma::mat& x, const arma::vec& y,
-                      int K, int n, double eps, 
+                      int K, int n, int maxit, double eps, 
                       bool std_err, int B = 0, bool Message_prog = false){
   
   // Input xx need to include the 1 column for intercept
   
   int d = K*n*n; 
   // Initialize
-  auto glm_res = PoissonRegression(x, y);
-  arma::vec beta_ini = glm_res["paramters"];
-  double lik = glm_res["likelihood"];
+  int tmp_maxit = maxit;
+  auto ini = PoissonRegression(x, y, maxit);
+  arma::vec beta_ini = ini["paramters"];
+  if(!ini["happyending"]) throw Rcpp::exception("Unsuccessful glm fit.", false);
+  if(Message_prog) Rcpp::Rcout << "glm initial converged in " << tmp_maxit - maxit << " iterations" << std::endl;
   
   //labeled_pairs
   int t_size = y.size()/d, p_rho;
@@ -38,7 +38,7 @@ Rcpp::List copSTM_cpp(const arma::mat& x, const arma::vec& y,
   std::vector<double> rho_v(p_rho, 0.0);
     
   // Fit model
-  lik = mle(x, y, beta_ini, rho_v, labeled_pairs, eps); // override beta, rho_v
+  double lik = mle(x, y, beta_ini, rho_v, labeled_pairs, maxit, eps); // override beta, rho_v
  
   // Standard error
   arma::vec se, y_0 = y.head(d);
