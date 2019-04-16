@@ -36,7 +36,7 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
                     const std::multimap<int, std::vector<int> >& labeled_pairs,
                     const std::multimap<int, std::vector<int> >& labeled_pairs0, 
                     const double add_penalty, const int& iteration,
-                    bool Message_prog){
+                    bool Message_prog, const int cor_type){
   
   double lik, crt; 
   bool first_prt = true;
@@ -71,7 +71,15 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
           //criterion
           if(Message_prog) Rcpp::Rcout << "Evaluating the " << pp + 1 << "th parameter: ";
           double d_star = boot_CLIC_penalty_sub(y_0, n, K, t_size, beta, corr, rho_v, v_main, v_rho, p_main_sub, p_sub, labeled_pairs, B, Message_prog);
-          crt = - 2*lik + log(t_size)*d_star + 2*add_penalty*d_star*log(p_sub);
+          int nn; 
+          if(cor_type == 1){
+            nn = t_size*K;
+          }else{
+            if(cor_type == 2){
+              nn = t_size*n*n;
+            }else{ nn = t_size; }
+          }
+          crt = - 2*lik + log(nn)*d_star + 2*add_penalty*d_star*log(p_sub);
         }else{
           crt = arma::datum::inf;
         }
@@ -105,7 +113,7 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
 }
 
 
-
+// with standard error
 void ModelSelection(std::vector<int>& v, double& OldCriterion,
                     std::map< std::vector<int>, int>& CandidateModels,
                     std::map< std::vector<int>, arma::vec>& ModelStdErr,
@@ -118,7 +126,7 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
                     const std::multimap<int, std::vector<int> >& labeled_pairs,
                     const std::multimap<int, std::vector<int> >& labeled_pairs0, 
                     const double add_penalty, const int& iteration,
-                    bool Message_prog){
+                    bool Message_prog, const int cor_type){
   
   double lik, crt; 
   bool first_prt = true;
@@ -154,7 +162,15 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
           // bootstrap: criterion and standard error
           if(Message_prog) Rcpp::Rcout << "Evaluating the " << pp + 1 << "th parameter: ";
           double d_star = boot_CLIC_penalty_sub(y_0, n, K, t_size, beta, tmp_se, corr, rho_v, v_main, v_rho, p_main_sub, p_sub, labeled_pairs, B, Message_prog);
-          crt = - 2*lik + log(t_size)*d_star + 2*add_penalty*d_star*log(p_sub);
+          int nn; 
+          if(cor_type == 1){
+            nn = t_size*K;
+          }else{
+            if(cor_type == 2){
+              nn = t_size*n*n;
+            }else{ nn = t_size; }
+          }
+          crt = - 2*lik + log(nn)*d_star + 2*add_penalty*d_star*log(p_sub);
         }else{
           crt = arma::datum::inf;
         }
@@ -191,7 +207,8 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
 
 
 // [[Rcpp::export]]
-Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, int K, int n, 
+Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, 
+                                const int cor_type, int K, int n, 
                                 int ModelCnt, int B, int maxit1, int maxit2, 
                                 const double add_penalty = 0, 
                                 bool Message_prog = true, bool Message_res = true,
@@ -208,19 +225,19 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, int K, i
   
   //labeled_pairs
   int t_size = y.size()/d, p_rho;
-  const std::multimap<int, std::vector<int> > labeled_pairs = get_pairs(K, n, p_rho, t_size); //override p_rho
+  const std::multimap<int, std::vector<int> > labeled_pairs = get_pairs(K, n, p_rho, t_size, cor_type); //override p_rho
   std::vector<double> rho_v(p_rho, 0.0);
   int p = p_rho + p_main;
   
   // Full model 
   double lik = mle(x, y, beta, rho_v, labeled_pairs, maxit1, eps); // override beta0, beta, rho_v
   
-  const std::multimap<int, std::vector<int> > labeled_pairs0 = get_pairs(K, n, p_rho); 
+  const std::multimap<int, std::vector<int> > labeled_pairs0 = get_pairs(K, n, p_rho, 1, cor_type); 
   arma::mat corr = cor_mat(rho_v, labeled_pairs0, d);
   
-  arma::vec y_0 = y.head(d);
+  arma::vec y_0 = y.head(d), se;
   
-  double d_star = boot_CLIC_penalty(y_0, n, K, t_size, beta, corr, rho_v, p_main, p, labeled_pairs, B, Message_prog);
+  double d_star = boot_CLIC_penalty(y_0, n, K, t_size, beta, se, corr, rho_v, p_main, p, labeled_pairs, B, Message_prog);
   double criterion = - 2*lik + log(t_size)*d_star + 2*add_penalty*d_star*log(p);
   
   // Model selection -------------------------------------------------
@@ -236,14 +253,14 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, int K, i
     for(int iteration = 0; iteration != ModelCnt; ++iteration){
       ModelSelection( v, criterion, CandidateModels, ModelStdErr, CriterionRecord, B, maxit2, eps, 
                       n, d, t_size, K, x, y, y_0, beta, rho_v, p, p_main, 
-                      labeled_pairs, labeled_pairs0, add_penalty, iteration, Message_prog);
+                      labeled_pairs, labeled_pairs0, add_penalty, iteration, Message_prog, cor_type);
       // override v, OldCriterion, CriterionRecord, CandidateModels and ModelStdErr
     }
   }else{
     for(int iteration = 0; iteration != ModelCnt; ++iteration){
       ModelSelection( v, criterion, CandidateModels, CriterionRecord, B, maxit2, eps, 
                       n, d, t_size, K, x, y, y_0, beta, rho_v, p, p_main, 
-                      labeled_pairs, labeled_pairs0, add_penalty, iteration, Message_prog);
+                      labeled_pairs, labeled_pairs0, add_penalty, iteration, Message_prog, cor_type);
       // override v, OldCriterion, CriterionRecord, CandidateModels
     }
   }
@@ -276,10 +293,13 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, int K, i
   auto tmp_theta = mle_sub(lik, x, y, beta, rho_v, v_main, v_rho, labeled_pairs, maxit2, eps);
 
   if(std_err){
-    // extract standard error from ModelStdErr
-    auto iter2 = ModelStdErr.find(selected);
-    arma::vec se = iter2->second;
     
+    // extract standard error from ModelStdErr
+    if(sum(v_main) + sum(v_rho) != p){
+      auto iter2 = ModelStdErr.find(selected);
+      se = iter2->second;
+    }
+
     return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
                               Rcpp::Named("main") = tmp_theta["beta"], 
                               Rcpp::Named("rho") = tmp_theta["rho"], 

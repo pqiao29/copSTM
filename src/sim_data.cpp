@@ -10,14 +10,14 @@
 // [[Rcpp::export]]
 Rcpp::List sim_data_cpp(const double y_ini, 
                         const int n, const int K, const int t_size, 
-                        const arma::vec& beta, std::vector<double> rho_v){
+                        const arma::vec& beta, std::vector<double> rho_v, const int cor_type = 3){
   
   int p_rho, d = n*n*K; 
   arma::vec y_0(d); y_0.fill(y_ini);
-  const std::multimap<int, std::vector<int> > labeled_pairs0 = get_pairs(K, n, p_rho); 
+  const std::multimap<int, std::vector<int> > labeled_pairs0 = get_pairs(K, n, p_rho, 1, cor_type); 
   
   if(p_rho != rho_v.size())
-    Rcpp::Rcout << "Incorrect number of correlation parameters!" << std::endl; 
+    throw Rcpp::exception("Incorrect number of correlation parameters!", false);
   
   arma::mat corr = cor_mat(rho_v, labeled_pairs0, d); 
   

@@ -4,7 +4,7 @@
 \alias{sim_data}
 \title{Simulate spatio-temporal data}
 \usage{
-sim_data(y_ini, n, K, t_size, beta, rho_v)
+sim_data(y_ini, n, K, t_size, beta, rho_v, cor_type)
 }
 \arguments{
 \item{y_ini}{An integer initial value for the first time point.}
@@ -18,6 +18,11 @@ sim_data(y_ini, n, K, t_size, beta, rho_v)
 \item{beta}{True values of regression parameters.}
 
 \item{rho_v}{True values of correlations.}
+
+\item{cor_type}{A character string, one of "sp", "mv" and "both". 
+Specifically, if "sp" (short for spatial), only spatial correlations of the same group from neighbouring tiles are captured; 
+if "mv" (short for multivariate), only the correlations between groups in the same tile are captured; 
+if "both", the model computes "sp" and "mv", as well as between-group correlation from neighbouring tiles.}
 }
 \value{
 Data ready to input to \code{copSTM} or \code{copSTModelSelect}.

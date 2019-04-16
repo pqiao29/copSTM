@@ -3,7 +3,6 @@
 
 #include "bounds.h"
 #include "bounds_deriv.h"
-#include "labeled_pairs.h"
 #include "score_hessian.h"
 #include "lik.h"
 

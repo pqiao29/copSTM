@@ -46,11 +46,18 @@ make_data <- function(data, n){
 #' @param t_size The number time points to be generated.
 #' @param beta  True values of regression parameters. 
 #' @param rho_v  True values of correlations. 
+#' @param cor_type A character string, one of "sp", "mv" and "both". 
+#'  Specifically, if "sp" (short for spatial), only spatial correlations of the same group from neighbouring tiles are captured; 
+#'  if "mv" (short for multivariate), only the correlations between groups in the same tile are captured; 
+#'  if "both", the model computes "sp" and "mv", as well as between-group correlation from neighbouring tiles.
 #'
 #' @return Data ready to input to \code{copSTM} or \code{copSTModelSelect}.
 #' 
 #' @seealso \code{\link{copSTM}}, \code{\link{copSTModelSelect}}
 
-sim_data <- function(y_ini, n, K, t_size, beta, rho_v){
-  return(sim_data_cpp(y_ini, n, K, t_size, beta, rho_v))
+sim_data <- function(y_ini, n, K, t_size, beta, rho_v, cor_type){
+  if(cor_type == "sp") ct <- 1
+  if(cor_type == "mv") ct <- 2 
+  if(cor_type == "both") ct <- 3 
+  return(sim_data_cpp(y_ini, n, K, t_size, beta, rho_v, ct))
 }

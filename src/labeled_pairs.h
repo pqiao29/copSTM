@@ -6,7 +6,9 @@
 #include <vector>
 
 
-std::multimap<int, std::vector<int> > get_pairs(int K, int n, int& p_rho, int rep = 1);
+std::multimap<int, std::vector<int> > get_pairs(int K, int n, 
+                                                int& p_rho, 
+                                                int rep = 1, const int cor_type = 3);
 
 
 #endif // _LABELED_PAIRSCPP_H
