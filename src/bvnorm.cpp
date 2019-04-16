@@ -1,10 +1,8 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
-#include <cmath>
 #include <algorithm>
 #include <vector>
-using namespace std;
 
 double Phi2diag( const double& x,
                  const double& a,  // 1 - rho
@@ -47,8 +45,8 @@ double Phi2diag( const double& x,
     res_new += d_even + d_odd;
   }
   res *= exp( -x * x / b ) * 1.591549430918953358e-001;
-  return max( ( 1.0 + 6.36619772367581343e-001 * asr ) * comp,
-              b * comp - max( 0.0, res ) );
+  return std::max( ( 1.0 + 6.36619772367581343e-001 * asr ) * comp,
+              b * comp - std::max( 0.0, res ) );
 }
 
 double Phi(double value)  // pnorm
@@ -103,14 +101,14 @@ double dbnorm_inf( const double& x,
              const double& y,
              const double& rho ){
     
-    if(isinf(x) || isinf(y))
+    if(std::isinf(x) || std::isinf(y))
         return 0;
     
   if( ( 1.0 - rho ) * ( 1.0 + rho ) <= 0.0 ){
     if( rho > 0.0 ){
-      return Phi( min( x, y ) );
+      return Phi( std::min( x, y ) );
     } else {
-      return max( 0.0, min( 1.0, Phi( x ) + Phi( y ) - 1.0 ) ); }
+      return std::max( 0.0, std::min( 1.0, Phi( x ) + Phi( y ) - 1.0 ) ); }
   }
 
   if( x == 0.0 && y == 0.0 ){ if( rho > 0.0 ){
@@ -127,8 +125,8 @@ double dbnorm_inf( const double& x,
 
 
 
-double dbnorm( const vector<double>& x,
-               const vector<double>& y,
+double dbnorm( const std::vector<double>& x,
+               const std::vector<double>& y,
                const double& rho ){
   
   /* requirement: x.size() == 2 && y.size() == 2
@@ -138,11 +136,11 @@ double dbnorm( const vector<double>& x,
   if(x[0] == x[1] || y[0] == y[1]){
     return 0;
   }else{
-    if(isinf(x[1]) && isinf(y[1])){
+    if(std::isinf(x[1]) && std::isinf(y[1])){
       return 1;
-    }else if(isinf(x[1])){
+    }else if(std::isinf(x[1])){
       return Phi(y[1]) - Phi(y[0]);
-    }else if(isinf(y[1])){
+    }else if(std::isinf(y[1])){
       return Phi(x[1]) - Phi(x[0]);
     }else{
       return dbnorm_inf(x[1], y[1], rho) + dbnorm_inf(x[0], y[0], rho) - dbnorm_inf(x[0], y[1], rho) - dbnorm_inf(x[1], y[0], rho);
