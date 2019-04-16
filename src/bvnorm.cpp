@@ -118,8 +118,8 @@ double dbnorm_inf( const double& x,
   }
   }
 
-  return max( 0.0,
-              min( 1.0,
+  return std::max( 0.0,
+              std::min( 1.0,
                    Phi2help( x, y, rho ) + Phi2help( y, x, rho ) ) );
 }
 
