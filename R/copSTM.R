@@ -116,21 +116,31 @@ copSTM <- function(x, y, K, n, cor_type = "both", temporal = TRUE, maxit, eps = 
   if(cor_type == "both") ct <- 3 
   res <- copSTM_cpp(x, y, temporal, ct, K, n, maxit, eps, std_err, B, Message_prog)
   
-  regres_par <- matrix(res$main, (K + 1), K)
-  ret_est <- list("intercept" = regres_par[1, ], "main_effects" = regres_par[-1, ], 
-                  "correlations" = res$rho)
-  
+  if(temporal){
+    regres_par <- matrix(res$main, (K + 1), K)
+    ret_est <- list("intercept" = regres_par[1, ], "main_effects" = regres_par[-1, ], 
+                    "correlations" = res$rho)
+  }else{
+    ret_est <- list("intercept" = res$main[1], "main_effects" = res$main[-1], 
+                    "correlations" = res$rho)
+  }
+
   if(std_err){
     
     se <- sqrt(res$std_err)
-    se_main <- matrix(se[1:(K * (K + 1))], (K + 1), K)
-    ret_se <- list("intercept" = se_main[1, ],
-                   "main_effects" = se_main[-1, ], 
-                   "correlations" = se[-(1:(K * (K + 1)))])
     
-    return(list( "coefficients" = ret_est,
-                 "likelihood" = res$likelihood, 
-                 "standard_error" = ret_se))
+    if(temporal){
+      se_main <- matrix(se[1:(K * (K + 1))], (K + 1), K)
+      ret_se <- list("intercept" = se_main[1, ],
+                     "main_effects" = se_main[-1, ], 
+                     "correlations" = se[-(1:(K * (K + 1)))])
+    }else{
+      se_main <- se[1:ncol(x)]
+      ret_se <- list("intercept" = se[1],
+                     "main_effects" = se_main[-1], 
+                     "correlations" = se[-(1:ncol(x))])
+    }
+
   }else{
     return(list("likelihood" = res$likelihood, 
                 "coefficients" = ret_est))
@@ -243,19 +253,34 @@ copSTMSelect <- function(x, y, K, n, temporal, cor_type, ModelCnt, B = 0, maxit1
   
   res <- copSTModelSelect_cpp(x, y, ct, K, n, temporal, ModelCnt, B, maxit1, maxit2, add_penalty, Message_prog, 
                                Message_res, eps)
-  regres_par <- matrix(res$main, (K + 1), K)
   
-  ret_est <- list("intercept" = regres_par[1, ], "main_effects" = regres_par[-1, ], 
-                  "correlations" = res$rho)
+  if(temporal){
+    regres_par <- matrix(res$main, (K + 1), K)
+    ret_est <- list("intercept" = regres_par[1, ], "main_effects" = regres_par[-1, ], 
+                    "correlations" = res$rho)
+  }else{
+    ret_est <- list("intercept" = res$main[1], "main_effects" = res$main[-1], 
+                    "correlations" = res$rho)
+  }
+  
   ret_v <- res$v
   
   if(temporal && B <= 0) stop("Positive B required")
   se <- rep(0, length(ret_v))
   se[ret_v == 1] <- sqrt(res$std_err)
-  se_main <- matrix(se[1:(K * (K + 1))], (K + 1), K)
-  ret_se <- list("intercept" = se_main[1, ],
-                 "main_effects" = se_main[-1, ], 
-                 "correlations" = se[-(1:(K * (K + 1)))])
+  
+  if(temporal){
+    se_main <- matrix(se[1:(K * (K + 1))], (K + 1), K)
+    ret_se <- list("intercept" = se_main[1, ],
+                   "main_effects" = se_main[-1, ], 
+                   "correlations" = se[-(1:(K * (K + 1)))])
+  }else{
+    se_main <- se[1:ncol(x)]
+    ret_se <- list("intercept" = se[1],
+                   "main_effects" = se_main[-1], 
+                   "correlations" = se[-(1:ncol(x))])
+  }
+
   
   return(list( "coefficients" = ret_est,
                "likelihood" = res$likelihood, "selected_model" = ret_v, 
