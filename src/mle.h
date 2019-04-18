@@ -11,4 +11,5 @@ double mle(const arma::mat& xx, const arma::vec& y,
            const std::multimap<int, std::vector<int> >& labeled_pairs,
            int maxit, double eps);
 
+
 #endif // _MLECPP_H

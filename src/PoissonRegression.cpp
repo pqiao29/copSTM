@@ -297,7 +297,7 @@ double Poisson_Newton(const mat& xx, const vec& y, vec& theta, const uvec& v_k,
 Rcpp::List PoissonRegression(const arma::mat& xx, const arma::vec& y, int& maxit){
   int p = xx.n_cols;
   vec theta(p); theta.zeros();
-      theta(0) = sum(y)/y.size();
+      theta(0) = log(sum(y)/y.size());
   bool happy = true; 
   double l = Poisson_Newton(xx, y, theta, maxit, happy); // override maxit to iterations left
   

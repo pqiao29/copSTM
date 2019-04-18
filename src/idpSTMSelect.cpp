@@ -62,7 +62,7 @@ Rcpp::List logGLMselect_cpp(const arma::vec& y, const arma::mat& x, const int ma
   
   // full model
   int p = x.n_cols, tmp_maxit = maxit; bool happy = true;
-  arma::vec theta(p, arma::fill::zeros); theta(0) = sum(y)/x.n_rows;
+  arma::vec theta(p, arma::fill::zeros); theta(0) = log(sum(y)/x.n_rows);
   double lik = Poisson_Newton(x, y, theta, tmp_maxit, happy); //override theta
   double crt = 2*lik + log(y.n_rows) * p;
   if(Message) Rcpp::Rcout << "glm initial converged in " << maxit - tmp_maxit << " iterations" << std::endl;

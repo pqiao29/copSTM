@@ -70,7 +70,7 @@ Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice, const int maxi
     // est
     int p = x.n_cols;
     arma::vec theta(p); theta.zeros();
-    theta(0) = sum(y.col(k))/y.size();
+    theta(0) = log(sum(y.col(k))/y.size());
     
     double l = Poisson_Newton(x, y.col(k), theta, tmp_maxit, happy);
     //if(!happy) throw Rcpp::exception("Unsuccessful glm fit.", false);

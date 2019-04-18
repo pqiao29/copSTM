@@ -1,15 +1,12 @@
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::plugins(cpp11)]]
 
 #include "bounds.h"
 #include "bounds_deriv.h"
 #include "score_hessian.h"
 #include "lik.h"
 
-#include <vector>
-#include <map>
-
-// [[Rcpp::plugins(cpp11)]]
 double mle(const arma::mat& xx, const arma::vec& y, 
                arma::vec& beta, std::vector<double>& rho_v, 
                const std::multimap<int, std::vector<int> >& labeled_pairs,
@@ -57,3 +54,4 @@ double mle(const arma::mat& xx, const arma::vec& y,
   
   return l_prev;
 }
+

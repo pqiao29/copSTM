@@ -18,8 +18,9 @@
 
 
 // [[Rcpp::export]]
-Rcpp::List copSTM_cpp(const arma::mat& x, const arma::vec& y, const int cor_type,
-                      int K, int n, int maxit, double eps, 
+Rcpp::List copSTM_cpp(const arma::mat& x, const arma::vec& y, 
+                      const bool temporal, const int cor_type,
+                      const int K, const int n, int maxit, double eps, 
                       bool std_err, int B = 0, bool Message_prog = false){
   
   // Input xx need to include the 1 column for intercept
@@ -37,27 +38,33 @@ Rcpp::List copSTM_cpp(const arma::mat& x, const arma::vec& y, const int cor_type
   const std::multimap<int, std::vector<int> > labeled_pairs = get_pairs(K, n, p_rho, t_size, cor_type); //override p_rho
   std::vector<double> rho_v(p_rho, 0.0);
     
-  // Fit model
   double lik = mle(x, y, beta_ini, rho_v, labeled_pairs, maxit, eps); // override beta, rho_v
- 
-  // Standard error
-  arma::vec se, y_0 = y.head(d);
-  if(std_err){
-    int p_main = x.n_cols, p = p_main + p_rho;
-    const std::multimap<int, std::vector<int> > labeled_pairs0 = get_pairs(K, n, p_rho, 1, cor_type); 
-    arma::mat corr = cor_mat(rho_v, labeled_pairs0, d);
+
+  if(std_err){ 
     
-    boot_CLIC_penalty(y_0, n, K, t_size, beta_ini, se, corr,   
-                      rho_v, p_main, p, labeled_pairs, B, Message_prog);
+    arma::vec se;
+    
+    if(temporal){ // Standard error for temporal setting
+      arma::vec y_0 = y.head(d);
+      int p_main = x.n_cols, p = p_main + p_rho;
+      const std::multimap<int, std::vector<int> > labeled_pairs0 = get_pairs(K, n, p_rho, 1, cor_type); 
+      arma::mat corr = cor_mat(rho_v, labeled_pairs0, d);
+      
+      boot_CLIC_penalty(y_0, n, K, t_size, beta_ini, se, corr,   
+                        rho_v, p_main, p, labeled_pairs, B, Message_prog);
+    }else{
+      get_std_err(x, y, beta_ini, rho_v, t_size, se, labeled_pairs);
+    }
     
     return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
                               Rcpp::Named("main") = beta_ini, 
                               Rcpp::Named("rho") = rho_v, 
                               Rcpp::Named("std_err") = se);
+ 
   }
-   
+  
   return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
                             Rcpp::Named("main") = beta_ini, 
                             Rcpp::Named("rho") = rho_v);
-
+  
 }

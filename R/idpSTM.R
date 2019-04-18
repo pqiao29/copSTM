@@ -46,7 +46,7 @@ idpSTM <- function(data, n, maxit){
 
 #' Model selsction of spatio-temporal model
 #'
-#' \code{idpSTModelSelect} performs variable selection on model \code{idpSTM} using BIC via Gibbs samplling. 
+#' \code{idpSTMSelect} performs variable selection on model \code{idpSTM} using BIC via Gibbs samplling. 
 #'
 #' @param data A matrix with four cloumns: time, x, y, group, where x and y are coordinates of location.
 #' @param n An integer number indicating size of the grids. The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)
@@ -69,7 +69,7 @@ idpSTM <- function(data, n, maxit){
 #' @examples
 #' n <- 25
 #' data("cell_growth_data") 
-#' select_est <- idpSTModelSelect(cell_growth_data, n, maxit = 30, ModelCnt = 20, Message = FALSE)
+#' select_est <- idpSTMSelect(cell_growth_data, n, maxit = 30, ModelCnt = 20, Message = FALSE)
 #' print("======= Selected model =======")
 #' print(select_est$selected_model)
 #' print("======= Estimates =======")
@@ -77,7 +77,7 @@ idpSTM <- function(data, n, maxit){
 #' print("======= Standard errors =======")
 #' print(select_est$standard_error)
 
-idpSTModelSelect <- function(data, n, maxit, ModelCnt, Message = F){
+idpSTMSelect <- function(data, n, maxit, ModelCnt, Message = F){
   
   dat <- tilling(data, n)
   res <- idpSTModelSelection_cpp(dat, n, maxit, ModelCnt, Message)

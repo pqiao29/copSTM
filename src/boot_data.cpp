@@ -26,10 +26,7 @@ Rcpp::NumericVector rmvpois( const arma::vec& lamvec, const arma::mat& Sigma){
 }
 
 
-#include<vector>
-#include<map>
 #include "grid_ring.h"
-
 
 void get_covariate(arma::mat& x, int& ind_cov_row,
                    const arma::vec& y_prev,   
@@ -56,7 +53,6 @@ void get_covariate(arma::mat& x, int& ind_cov_row,
   }
   
 } 
-
 
 
 Rcpp::List boot_data(const arma::vec& y_0, 
@@ -91,5 +87,30 @@ Rcpp::List boot_data(const arma::vec& y_0,
   return Rcpp::List::create(Rcpp::Named("response") = y,
                             Rcpp::Named("covariates") = x);
 }
+
+
+Rcpp::List gen_data( int t_size, int d, const arma::vec& beta,
+                     const arma::mat& cor){
+  
+  int p = beta.size();
+  int nn = t_size *d;
+  
+  arma::mat xx(nn, p);
+  (xx.tail_cols(p - 1)).imbue( R::norm_rand );  
+  (xx.col(0)).ones(); 
+  
+  arma::vec lmd = arma::exp(xx * beta), y(nn);
+  arma::vec::iterator it = y.begin();
+  
+  for( int t = 0; t != t_size; ++t){
+    arma::vec tmp_lmd = lmd.subvec(t*d, ((t + 1)*d - 1) );
+    arma::vec tmp_y = rmvpois(tmp_lmd, cor);
+    it = std::copy(tmp_y.cbegin(), tmp_y.cend(), it);
+  }
+  
+  return Rcpp::List::create(Rcpp::Named("response") = y,
+                            Rcpp::Named("covariates") = xx);
+}
+
 
 

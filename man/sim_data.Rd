@@ -4,11 +4,10 @@
 \alias{sim_data}
 \title{Simulate spatio-temporal data}
 \usage{
-sim_data(y_ini, n, K, t_size, beta, rho_v, cor_type)
+sim_data(n, K, t_size, beta, rho_v, cor_type = 3, temporal = TRUE,
+  y_ini = 10)
 }
 \arguments{
-\item{y_ini}{An integer initial value for the first time point.}
-
 \item{n}{An integer spatial parameter. Data is simulated as n*n grids.}
 
 \item{K}{The number of groups.}
@@ -19,17 +18,22 @@ sim_data(y_ini, n, K, t_size, beta, rho_v, cor_type)
 
 \item{rho_v}{True values of correlations.}
 
-\item{cor_type}{A character string, one of "sp", "mv" and "both". 
+\item{cor_type}{A character string, one of "sp", "mv" and "both".}
+
+\item{temporal}{Logical, if TRUE, generates response in temporal setting.
+Otherwise, each d-dimnesional $y_i (i = 1, \dots, t_size)$ are generated independently.}
+
+\item{y_ini}{An integer initial value for the first time point.
 Specifically, if "sp" (short for spatial), only spatial correlations of the same group from neighbouring tiles are captured; 
 if "mv" (short for multivariate), only the correlations between groups in the same tile are captured; 
 if "both", the model computes "sp" and "mv", as well as between-group correlation from neighbouring tiles.}
 }
 \value{
-Data ready to input to \code{copSTM} or \code{copSTModelSelect}.
+Data ready to input to \code{copSTM} or \code{copSTMSelect}.
 }
 \description{
-Simulate data for testing \code{copSTM} and \code{copSTModelSelect}.
+Simulate data for testing \code{copSTM} and \code{copSTMSelect}.
 }
 \seealso{
-\code{\link{copSTM}}, \code{\link{copSTModelSelect}}
+\code{\link{copSTM}}, \code{\link{copSTMSelect}}
 }
