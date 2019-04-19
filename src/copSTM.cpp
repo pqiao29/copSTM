@@ -43,17 +43,17 @@ Rcpp::List copSTM_cpp(const arma::mat& x, const arma::vec& y,
   if(std_err){ 
     
     arma::vec se;
+    int p_main = x.n_cols, p = p_main + p_rho;
+    const std::multimap<int, std::vector<int> > labeled_pairs0 = get_pairs(K, n, p_rho, 1, cor_type); 
     
     if(temporal){ // Standard error for temporal setting
       arma::vec y_0 = y.head(d);
-      int p_main = x.n_cols, p = p_main + p_rho;
-      const std::multimap<int, std::vector<int> > labeled_pairs0 = get_pairs(K, n, p_rho, 1, cor_type); 
       arma::mat corr = cor_mat(rho_v, labeled_pairs0, d);
       
       boot_CLIC_penalty(y_0, n, K, t_size, beta_ini, se, corr,   
                         rho_v, p_main, p, labeled_pairs, B, Message_prog);
     }else{
-      get_std_err(x, y, beta_ini, rho_v, t_size, se, labeled_pairs);
+      get_std_err(x, y, beta_ini, rho_v, t_size, d, se, labeled_pairs0);
     }
     
     return Rcpp::List::create(Rcpp::Named("likelihood") = lik,

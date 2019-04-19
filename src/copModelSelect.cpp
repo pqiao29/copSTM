@@ -73,7 +73,7 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
             if(Message_prog) Rcpp::Rcout << "Evaluating the " << pp + 1 << "th parameter: ";
             d_star = boot_CLIC_penalty_sub(y_0, n, K, t_size, beta, se, corr, rho_v, v_main, v_rho, p_main_sub, p_sub, labeled_pairs, B, Message_prog);
           }else{
-            d_star = get_std_err(xx, y, beta, rho_v, t_size, v_main, v_rho, se, labeled_pairs);
+            d_star = get_std_err(xx, y, beta, rho_v, t_size, v_main, v_rho, d, se, labeled_pairs0);
           }
           
           ModelStdErr.insert(std::make_pair(v, se));
@@ -158,7 +158,7 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y,
     y_0 = y.head(d);
     d_star = boot_CLIC_penalty(y_0, n, K, t_size, beta, se, corr, rho_v, p_main, p, labeled_pairs, B, Message_prog);
   }else{
-    d_star = get_std_err(x, y, beta, rho_v, t_size, se, labeled_pairs);
+    d_star = get_std_err(x, y, beta, rho_v, t_size, d, se, labeled_pairs0);
   }
   double criterion = - 2*lik + log(t_size)*d_star + 2*add_penalty*d_star*log(p);
   

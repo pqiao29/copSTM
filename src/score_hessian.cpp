@@ -85,14 +85,13 @@ void score_hessian(arma::vec& score, arma::mat& hessian, // only adds to score a
 // full model
 double get_std_err(const arma::mat& xx, const arma::vec& y, 
                    const arma::vec& beta, const std::vector<double>& rho_v, 
-                   int t_size,  arma::vec& se, 
-                   const std::multimap<int, std::vector<int> >& labeled_pairs){
+                   int t_size, int d, arma::vec& se, 
+                   const std::multimap<int, std::vector<int> >& labeled_pairs0){
   
   int p_main = beta.size(), p_rho = rho_v.size(), p = p_main + p_rho;
   arma::vec score(p, arma::fill::zeros); 
   arma::mat hessian(p, p, arma::fill::zeros); 
-  int n_pairs = labeled_pairs.size();
-  arma::mat score_record(p, n_pairs);
+  arma::mat score_record(p, t_size);
   
   // Bounds for integrals in Gaussian cdf
   const arma::vec y_minus1 = y - 1;
@@ -103,32 +102,39 @@ double get_std_err(const arma::mat& xx, const arma::vec& y,
                                     lower_bdd = get_bd_deriv_arma(xx, y, false, beta);
   
   // score, score_record, hessian 
-  int ind_y = 0; 
-  for(int lab = 1; lab != rho_v.size() + 1; ++lab){
+  for(int t = 0; t != t_size; ++t){
     
-    double rho = rho_v[lab - 1];
+    arma::vec score_t(p, arma::fill::zeros);
     
-    for(auto pos = labeled_pairs.equal_range(lab); pos.first != pos.second; ++pos.first){
+    for(int lab = 1; lab != rho_v.size() + 1; ++lab){
       
-      std::vector<int> pair_ind = pos.first->second;
-      arma::vec tmp_scr(p); tmp_scr.fill(0); // component score 
+      double rho = rho_v[lab - 1];
       
-      for(int pp = 0; pp != p_main; ++pp){
-        tmp_scr(pp) = score_main_cpp(pair_ind, pp, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
+      for(auto pos = labeled_pairs0.equal_range(lab); pos.first != pos.second; ++pos.first){
+        
+        std::vector<int> pair_ind = pos.first->second;
+                         pair_ind[0] += t*d; pair_ind[1] += t*d;
+        arma::vec tmp_scr(p); tmp_scr.fill(0); // component score 
+        
+        for(int pp = 0; pp != p_main; ++pp){
+          tmp_scr(pp) = score_main_cpp(pair_ind, pp, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
+        }
+        tmp_scr(p_main + lab - 1) = score_rho_cpp(pair_ind, rho, lower_bd, upper_bd, arma::datum::pi);
+        
+        //update score and hessian
+        score += tmp_scr;  
+        score_t += tmp_scr;
+        arma::mat tmp_hes(tmp_scr);
+        hessian +=  tmp_hes * tmp_hes.t();
       }
-      tmp_scr(p_main + lab - 1) = score_rho_cpp(pair_ind, rho, lower_bd, upper_bd, arma::datum::pi);
-      
-      //update score and hessian
-      score += tmp_scr;
-      arma::mat tmp_hes(tmp_scr);
-      score_record.col(ind_y++) = tmp_hes;
-      hessian +=  tmp_hes * tmp_hes.t();
     }
+    
+    score_record.col(t) = score_t;
   }
   
   // J
   score_record.each_col() -= (score/t_size);
-  arma::mat J = score_record * score_record.t();
+  arma::mat J = (score_record * score_record.t());
   
   // standard error
   arma::mat tmp_mat = arma::solve(hessian, J);
@@ -142,7 +148,8 @@ double get_std_err(const arma::mat& xx, const arma::vec& y,
 double get_std_err(const arma::mat& xx, const arma::vec& y, 
                    const arma::vec& beta, std::vector<double> rho_v, const int t_size, 
                    const arma::Col<int>& v_main, const arma::Col<int>& v_rho, 
-                   const std::multimap<int, std::vector<int> >& labeled_pairs){
+                   int d, arma::vec& se, 
+                   const std::multimap<int, std::vector<int> >& labeled_pairs0){
   // set up
   int p_main = sum(v_main), p = p_main + sum(v_rho);
   arma::vec beta_sub = beta % v_main;
@@ -160,110 +167,50 @@ double get_std_err(const arma::mat& xx, const arma::vec& y,
   // score, hessian, score_record 
   arma::vec score(p, arma::fill::zeros); 
   arma::mat hessian(p, p, arma::fill::zeros); 
-  int n_pairs = labeled_pairs.size();
-  arma::mat score_record(p, n_pairs);
+  arma::mat score_record(p, t_size);
   
-  int ind_y = 0; 
-  for(int lab = 1; lab != rho_v.size() + 1; ++lab){
+  for(int t = 0; t != t_size; ++t){
     
-    double rho = rho_v[lab - 1];
+    arma::vec score_t(p, arma::fill::zeros);
     
-    for(auto pos = labeled_pairs.equal_range(lab); pos.first != pos.second; ++pos.first){
+    for(int lab = 1; lab != rho_v.size() + 1; ++lab){
       
-      std::vector<int> pair_ind = pos.first->second;
-      arma::vec tmp_scr(p);  tmp_scr.fill(0);
+      double rho = rho_v[lab - 1];
       
-      for(int pp = 0; pp != p_main; ++pp){
-        tmp_scr(pp) = score_main_cpp(pair_ind, pp, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
-      }
-      
-      if(rho){
-        arma::Col<int>::const_iterator v_rho_ptr = v_rho.cbegin();
-        arma::rowvec::iterator scr_ptr = tmp_scr.begin() + p_main;
-        for(int i = 0; i != lab - 1; ++i){
-          if(*v_rho_ptr++)
-            ++scr_ptr;
+      for(auto pos = labeled_pairs0.equal_range(lab); pos.first != pos.second; ++pos.first){
+        
+        std::vector<int> pair_ind = pos.first->second;
+                         pair_ind[0] += t*d; pair_ind[1] += t*d;
+        arma::vec tmp_scr(p);  tmp_scr.fill(0);
+        
+        for(int pp = 0; pp != p_main; ++pp){
+          tmp_scr(pp) = score_main_cpp(pair_ind, pp, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
         }
-        *scr_ptr = score_rho_cpp(pair_ind, rho, lower_bd, upper_bd, arma::datum::pi);
-      }
-      
-      //update score and hessian
-      score += tmp_scr;
-      arma::mat tmp_hes(tmp_scr);
-      score_record.col(ind_y++) = tmp_hes;
-      hessian += tmp_hes * tmp_hes.t();
-    }
-  }
-  
-  // penalty
-  score_record.each_col() -= (score/t_size);
-  arma::mat J = score_record * score_record.t();
-  arma::mat tmp_mat = arma::solve(hessian, J);
-  
-  return arma::trace(tmp_mat); 
-}
-
-
-double get_std_err(const arma::mat& xx, const arma::vec& y, 
-                   const arma::vec& beta, std::vector<double> rho_v, const int t_size, 
-                   const arma::Col<int>& v_main, const arma::Col<int>& v_rho, 
-                   arma::vec& se, 
-                   const std::multimap<int, std::vector<int> >& labeled_pairs){
-  // set up
-  int p_main = sum(v_main), p = p_main + sum(v_rho);
-  arma::vec beta_sub = beta % v_main;
-  arma::vec rho_zeros = arma::vec(rho_v) % v_rho;
-  rho_v = arma::conv_to<std::vector<double> >::from(rho_zeros);
-  
-  // bounds 
-  const arma::vec y_minus1 = y - 1;
-  std::vector<double> lower_bd = bound(xx, y_minus1, beta_sub), 
-                      upper_bd = bound(xx, y, beta_sub);
-  
-  std::vector<std::vector<double> > upper_bdd = get_bd_deriv_arma_sub(xx, y, true, beta_sub, v_main),
-                                    lower_bdd = get_bd_deriv_arma_sub(xx, y, false, beta_sub, v_main);
-  
-  // score, hessian, score_record 
-  arma::vec score(p, arma::fill::zeros); 
-  arma::mat hessian(p, p, arma::fill::zeros); 
-  int n_pairs = labeled_pairs.size();
-  arma::mat score_record(p, n_pairs);
-  
-  int ind_y = 0; 
-  for(int lab = 1; lab != rho_v.size() + 1; ++lab){
-    
-    double rho = rho_v[lab - 1];
-    
-    for(auto pos = labeled_pairs.equal_range(lab); pos.first != pos.second; ++pos.first){
-      
-      std::vector<int> pair_ind = pos.first->second;
-      arma::vec tmp_scr(p);  tmp_scr.fill(0);
-      
-      for(int pp = 0; pp != p_main; ++pp){
-        tmp_scr(pp) = score_main_cpp(pair_ind, pp, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
-      }
-      
-      if(rho){
-        arma::Col<int>::const_iterator v_rho_ptr = v_rho.cbegin();
-        arma::rowvec::iterator scr_ptr = tmp_scr.begin() + p_main;
-        for(int i = 0; i != lab - 1; ++i){
-          if(*v_rho_ptr++)
-            ++scr_ptr;
+        
+        if(rho){
+          arma::Col<int>::const_iterator v_rho_ptr = v_rho.cbegin();
+          arma::rowvec::iterator scr_ptr = tmp_scr.begin() + p_main;
+          for(int i = 0; i != lab - 1; ++i){
+            if(*v_rho_ptr++)
+              ++scr_ptr;
+          }
+          *scr_ptr = score_rho_cpp(pair_ind, rho, lower_bd, upper_bd, arma::datum::pi);
         }
-        *scr_ptr = score_rho_cpp(pair_ind, rho, lower_bd, upper_bd, arma::datum::pi);
+        
+        //update score and hessian
+        score += tmp_scr;
+        score_t += tmp_scr;
+        arma::mat tmp_hes(tmp_scr);
+        hessian += tmp_hes * tmp_hes.t();
       }
-      
-      //update score and hessian
-      score += tmp_scr;
-      arma::mat tmp_hes(tmp_scr);
-      score_record.col(ind_y++) = tmp_hes;
-      hessian += tmp_hes * tmp_hes.t();
     }
+    
+    score_record.col(t) = score_t;
   }
   
   // J
   score_record.each_col() -= (score/t_size);
-  arma::mat J = score_record * score_record.t();
+  arma::mat J = (score_record * score_record.t());
   
   // standard error
   arma::mat tmp_mat = arma::solve(hessian, J);

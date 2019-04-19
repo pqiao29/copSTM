@@ -24,18 +24,13 @@ void score_hessian(arma::vec& score, arma::mat& hessian,
 
 double get_std_err(const arma::mat& xx, const arma::vec& y, 
                    const arma::vec& beta, const std::vector<double>& rho_v, 
-                      int t_size, arma::vec& se, 
-                      const std::multimap<int, std::vector<int> >& labeled_pairs);
+                   int t_size, int d, arma::vec& se, 
+                   const std::multimap<int, std::vector<int> >& labeled_pairs0);
 
 double get_std_err(const arma::mat& xx, const arma::vec& y, 
                    const arma::vec& beta, std::vector<double> rho_v, const int t_size, 
                    const arma::Col<int>& v_main, const arma::Col<int>& v_rho, 
-                   const std::multimap<int, std::vector<int> >& labeled_pairs);
-
-double get_std_err(const arma::mat& xx, const arma::vec& y, 
-                   const arma::vec& beta, std::vector<double> rho_v, const int t_size, 
-                   const arma::Col<int>& v_main, const arma::Col<int>& v_rho, 
-                   arma::vec& se, 
-                   const std::multimap<int, std::vector<int> >& labeled_pairs);
+                   int d, arma::vec& se, 
+                   const std::multimap<int, std::vector<int> >& labeled_pairs0);
 
 #endif // _SCORE_HESSIANCPP_H
