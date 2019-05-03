@@ -140,6 +140,10 @@ copSTM <- function(x, y, K, n, cor_type = "both", temporal = TRUE, maxit, eps = 
                      "main_effects" = se_main[-1], 
                      "correlations" = se[-(1:ncol(x))])
     }
+    
+    return(list("likelihood" = res$likelihood, 
+                "coefficients" = ret_est, 
+                "standard_error" = ret_se))
 
   }else{
     return(list("likelihood" = res$likelihood, 

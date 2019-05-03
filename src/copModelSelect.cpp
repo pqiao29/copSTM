@@ -188,6 +188,7 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y,
     int count = 0;
     while(count < 5 && iter != Generated_Models.rend()){
       int tmp_cnt = iter->first;
+      /*
       for(auto pos = Generated_Models.equal_range(tmp_cnt); count < 5 && pos.first != pos.second; ++pos.first){
         std::vector<int> tmp_v = pos.first->second;
         Rcpp::Rcout << "Model ";
@@ -196,7 +197,16 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y,
         }
         Rcpp::Rcout << " appeared " << tmp_cnt << " times" << std::endl; 
         ++count; 
+      }*/
+      
+      std::vector<int> tmp_v = iter->second;
+      Rcpp::Rcout << "Model ";
+      for(auto c : tmp_v){
+        Rcpp::Rcout << c;
       }
+      Rcpp::Rcout << " appeared " << tmp_cnt << " times" << std::endl; 
+      ++count; 
+      
       ++iter;
     }
   }

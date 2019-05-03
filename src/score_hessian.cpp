@@ -61,7 +61,7 @@ void score_hessian(arma::vec& score, arma::mat& hessian, // only adds to score a
         tmp_scr(pp) = score_main_cpp(pair_ind, pp, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
       }
       
-      if(rho){
+      if(v_rho[lab - 1]){
         arma::Col<int>::const_iterator v_rho_ptr = v_rho.cbegin();
         arma::rowvec::iterator scr_ptr = tmp_scr.begin() + p_main;
         for(int i = 0; i != lab - 1; ++i){
@@ -187,7 +187,7 @@ double get_std_err(const arma::mat& xx, const arma::vec& y,
           tmp_scr(pp) = score_main_cpp(pair_ind, pp, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
         }
         
-        if(rho){
+        if(v_rho[lab - 1]){
           arma::Col<int>::const_iterator v_rho_ptr = v_rho.cbegin();
           arma::rowvec::iterator scr_ptr = tmp_scr.begin() + p_main;
           for(int i = 0; i != lab - 1; ++i){
