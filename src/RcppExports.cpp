@@ -83,16 +83,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // idptSTM_cpp
-Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice, const int maxit, bool fit_plot);
-RcppExport SEXP _copSTM_idptSTM_cpp(SEXP datSEXP, SEXP n_latticeSEXP, SEXP maxitSEXP, SEXP fit_plotSEXP) {
+Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n, const int maxit, bool fit_plot);
+RcppExport SEXP _copSTM_idptSTM_cpp(SEXP datSEXP, SEXP nSEXP, SEXP maxitSEXP, SEXP fit_plotSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type dat(datSEXP);
-    Rcpp::traits::input_parameter< const int >::type n_lattice(n_latticeSEXP);
+    Rcpp::traits::input_parameter< const int >::type n(nSEXP);
     Rcpp::traits::input_parameter< const int >::type maxit(maxitSEXP);
     Rcpp::traits::input_parameter< bool >::type fit_plot(fit_plotSEXP);
-    rcpp_result_gen = Rcpp::wrap(idptSTM_cpp(dat, n_lattice, maxit, fit_plot));
+    rcpp_result_gen = Rcpp::wrap(idptSTM_cpp(dat, n, maxit, fit_plot));
     return rcpp_result_gen;
 END_RCPP
 }

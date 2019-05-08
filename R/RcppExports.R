@@ -17,8 +17,8 @@ idpSTModelSelection_cpp <- function(dat, n, maxit, ModelCnt, Message) {
     .Call(`_copSTM_idpSTModelSelection_cpp`, dat, n, maxit, ModelCnt, Message)
 }
 
-idptSTM_cpp <- function(dat, n_lattice, maxit, fit_plot) {
-    .Call(`_copSTM_idptSTM_cpp`, dat, n_lattice, maxit, fit_plot)
+idptSTM_cpp <- function(dat, n, maxit, fit_plot) {
+    .Call(`_copSTM_idptSTM_cpp`, dat, n, maxit, fit_plot)
 }
 
 make_cor_label <- function(K, n, p_rho, cor_type) {
