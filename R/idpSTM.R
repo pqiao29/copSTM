@@ -6,6 +6,7 @@
 #' @param data A matrix with four cloumns: time, x, y, group, where x and y are coordinates of location.
 #' @param n An integer number indicating size of the grids. The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)
 #' @param maxit Maximum number of iterations of maximum likelihood estimation. 
+#' @param fit Logical, if TRUE, return fitted values.
 #' 
 #' @return A list with components
 #' \itemize{
@@ -26,21 +27,30 @@
 #' print("======= Standard errors =======")
 #' print(est$standard_error)
 
-idpSTM <- function(data, n, maxit){
+idpSTM <- function(data, n, maxit, fit = FALSE){
   
   K <- max(data[, 4])
   
   dat <- tilling(data, n)
-  res <- idptSTM_cpp(dat, n, maxit)
+  res <- idptSTM_cpp(dat, n, maxit, fit)
   
   ret_est <- list("intercept" = res$intercept, "main_effects" = res$main_effects)
   
   se <- matrix(sqrt(res$se), K + 1, K)
   ret_se <- list("intercept" = se[1, ], "main_effects" = se[-1, ])
   
-  return(list( "coefficients" = ret_est,
-               "likelihood" = res$likelihood, 
-               "standard_error" = ret_se))
+  if(fit){
+    return(list( "coefficients" = ret_est,
+                 "likelihood" = res$likelihood, 
+                 "standard_error" = ret_se, 
+                 "fitted" = res$fit, 
+                 "observed" = res$obs))
+  }else{
+    return(list( "coefficients" = ret_est,
+                 "likelihood" = res$likelihood, 
+                 "standard_error" = ret_se))
+  }
+  
 }
 
 

@@ -4,7 +4,7 @@
 \alias{idpSTM}
 \title{Fit spatio-temporal Model}
 \usage{
-idpSTM(data, n, maxit)
+idpSTM(data, n, maxit, fit = FALSE)
 }
 \arguments{
 \item{data}{A matrix with four cloumns: time, x, y, group, where x and y are coordinates of location.}
@@ -12,6 +12,8 @@ idpSTM(data, n, maxit)
 \item{n}{An integer number indicating size of the grids. The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)}
 
 \item{maxit}{Maximum number of iterations of maximum likelihood estimation.}
+
+\item{fit}{Logical, if TRUE, return fitted values.}
 }
 \value{
 A list with components

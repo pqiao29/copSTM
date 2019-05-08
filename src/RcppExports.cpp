@@ -83,15 +83,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // idptSTM_cpp
-Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice, const int maxit);
-RcppExport SEXP _copSTM_idptSTM_cpp(SEXP datSEXP, SEXP n_latticeSEXP, SEXP maxitSEXP) {
+Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice, const int maxit, bool fit_plot);
+RcppExport SEXP _copSTM_idptSTM_cpp(SEXP datSEXP, SEXP n_latticeSEXP, SEXP maxitSEXP, SEXP fit_plotSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type dat(datSEXP);
     Rcpp::traits::input_parameter< const int >::type n_lattice(n_latticeSEXP);
     Rcpp::traits::input_parameter< const int >::type maxit(maxitSEXP);
-    rcpp_result_gen = Rcpp::wrap(idptSTM_cpp(dat, n_lattice, maxit));
+    Rcpp::traits::input_parameter< bool >::type fit_plot(fit_plotSEXP);
+    rcpp_result_gen = Rcpp::wrap(idptSTM_cpp(dat, n_lattice, maxit, fit_plot));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -145,7 +146,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_copSTM_copSTM_cpp", (DL_FUNC) &_copSTM_copSTM_cpp, 11},
     {"_copSTM_logGLMselect_cpp", (DL_FUNC) &_copSTM_logGLMselect_cpp, 6},
     {"_copSTM_idpSTModelSelection_cpp", (DL_FUNC) &_copSTM_idpSTModelSelection_cpp, 5},
-    {"_copSTM_idptSTM_cpp", (DL_FUNC) &_copSTM_idptSTM_cpp, 3},
+    {"_copSTM_idptSTM_cpp", (DL_FUNC) &_copSTM_idptSTM_cpp, 4},
     {"_copSTM_make_cor_label", (DL_FUNC) &_copSTM_make_cor_label, 4},
     {"_copSTM_data_cor", (DL_FUNC) &_copSTM_data_cor, 2},
     {"_copSTM_sim_data_cpp", (DL_FUNC) &_copSTM_sim_data_cpp, 8},

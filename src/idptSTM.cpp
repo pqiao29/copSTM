@@ -51,7 +51,7 @@ Rcpp::List data_indpt(const arma::mat& dat, const int n){
 } 
 
 // [[Rcpp::export]]
-Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice, const int maxit){
+Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice, const int maxit, bool fit_plot){
   
   /*
    * Requirement of data columns: Timepoint (0, 1, 2, ...), group (1, 2, 3, ...), tile (1, 2, ... n*n)
@@ -62,6 +62,8 @@ Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice, const int maxi
   arma::mat y = in_data["response"];
   int K = in_data["K"];
   double lik = 0; 
+  int t_size = in_data["T"];
+  arma::Mat<int> fitted(K, t_size), obsved(K, t_size);
   
   arma::rowvec beta0(K); arma::mat beta(K, K); arma::mat se((K + 1), K);
   int ind_b0 = 0;
@@ -83,12 +85,31 @@ Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n_lattice, const int maxi
     arma::mat hessian(p, p);
     get_hessian(x, y.col(k), theta, hessian);
     se.col(k) = arma::diagvec(arma::inv_sympd(hessian));
+    
+    // for goodness-of-fit curves
+    if(fit_plot){
+      arma::vec fit_lmd = exp(x * theta);
+      fit_lmd.for_each( [](arma::vec::elem_type& l){ l = R::rpois(l); } );
+      for(int t = 0; t != t_size; ++t){
+        fitted(k, t) = sum(fit_lmd.subvec(t*n_lattice, ((t + 1)*n_lattice - 1)));
+        obsved(k, t) = sum((y.col(k)).subvec(t*n_lattice, ((t + 1)*n_lattice - 1)));
+      }
+    }
   }
 
-  return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
-                            Rcpp::Named("intercept") = beta0, 
-                            Rcpp::Named("main_effects") = beta, 
-                            Rcpp::Named("se") = se);
+  if(fit_plot){
+    return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
+                              Rcpp::Named("intercept") = beta0, 
+                              Rcpp::Named("main_effects") = beta, 
+                              Rcpp::Named("se") = se, 
+                              Rcpp::Named("fit") = fitted, 
+                              Rcpp::Named("obs") = obsved);
+  }else{
+    return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
+                              Rcpp::Named("intercept") = beta0, 
+                              Rcpp::Named("main_effects") = beta, 
+                              Rcpp::Named("se") = se);
+  }
   
 }
   
