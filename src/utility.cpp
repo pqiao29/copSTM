@@ -4,7 +4,7 @@
 #include "bvnorm.h"
 
 double f_cond_cpp(const double& up, const double& down, const double& condi, const double& rho){
-  if(isinf(condi)){
+  if(std::isinf(condi)){
     return 0; 
   }else{
     return  R::dnorm(condi, 0, 1, false) 
