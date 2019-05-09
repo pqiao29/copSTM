@@ -57,7 +57,7 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
         mle_sub(lik, xx, y, beta, rho_v, v_main, v_rho, labeled_pairs, maxit, eps); // override lik
         
         // make correlation matrix with zeros in rho
-        if(!isnan(lik) && !isinf(lik)){
+        if(!std::isnan(lik) && !std::isinf(lik)){
           
           if(Message_prog && first_prt){
             Rcpp::Rcout << "iteration: " << iteration + 1 << std::endl;
@@ -100,7 +100,7 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
       }
       
       // generate Gibbs sample 
-      if(!isnan(crt) && !isinf(crt)){
+      if(!std::isnan(crt) && !std::isinf(crt)){
         double s = exp(crt - OldCriterion), 
           prob = Rcpp::traits::is_infinite<REALSXP>(s) ? 1 :( v[pp] ? 1/(1 + s) : s/(1 + s));
         
