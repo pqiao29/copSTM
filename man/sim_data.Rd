@@ -2,10 +2,10 @@
 % Please edit documentation in R/make_data.R
 \name{sim_data}
 \alias{sim_data}
-\title{Simulate spatio-temporal data}
+\title{Simulate grouped spatio-temporal count data}
 \usage{
-sim_data(n, K, t_size, beta, rho_v, cor_type = 3, temporal = TRUE,
-  y_ini = 10)
+sim_data(n, K, t_size, beta, marginal, cor_type, rho, temporal,
+  dispersion = 1, y_ini = 10)
 }
 \arguments{
 \item{n}{An integer spatial parameter. Data is simulated as n*n grids.}
@@ -14,25 +14,49 @@ sim_data(n, K, t_size, beta, rho_v, cor_type = 3, temporal = TRUE,
 
 \item{t_size}{The number time points to be generated.}
 
-\item{beta}{True values of regression parameters.}
+\item{beta}{True values of regression coefficients.
+If temporal == TRUE, beta needs to have length K*(K + 1) 
+(i.e. K intercepts for K groups and K*K impact parameters, see main_effects in values of \code{\link{idpSTM}} ).
+If temporal == FALSE, beta can have any length greater than 1.}
 
-\item{rho_v}{True values of correlations.}
+\item{marginal}{Distribution of response variable: "pois" for Poisson, "nbinom" for negative binomial.}
 
-\item{cor_type}{A character string, one of "sp", "mv" and "both".}
+\item{cor_type}{Correlation type. 
+\itemize{
+\item \code{sp}: Spatial only, consider only correlation of the same group from neighbouring tiles,
+\item \code{mv}: Multivariate only, consider only correlation between different groups in the same tile,
+\item \code{both}: Both "sp" and "mv", as well as between-group correlation from neighbouring tiles.
+}}
 
-\item{temporal}{Logical, if TRUE, generates response in temporal setting.
-Otherwise, each d-dimnesional $y_i (i = 1, \dots, t_size)$ are generated independently.}
+\item{rho}{True values of correlations. 
+If cor_type = "sp", needs to have length K, 
+If cor_type = "mv", needs to have length K*(K + 1)/2, 
+If cor_type = "both", needs to have length K + K*(K + 1), in the order of:  
+("sp", "mv", between-group correlation from neighbouring tiles).}
 
-\item{y_ini}{An integer initial value for the first time point.
-Specifically, if "sp" (short for spatial), only spatial correlations of the same group from neighbouring tiles are captured; 
-if "mv" (short for multivariate), only the correlations between groups in the same tile are captured; 
-if "both", the model computes "sp" and "mv", as well as between-group correlation from neighbouring tiles.}
+\item{temporal}{Logical, if TRUE, generates response in temporal setting.}
+
+\item{dispersion}{Overdispersion parameter, useful only when marginal == "nbinom". 
+Required to be strictly positive.}
+
+\item{y_ini}{An integer initial value for the first time point.}
 }
 \value{
-Data ready to input to \code{copSTM} or \code{copSTMSelect}.
+A list of response and covariates separately.
 }
 \description{
-Simulate data for testing \code{copSTM} and \code{copSTMSelect}.
+Simulate correlated count data for testing \code{copSTM} and \code{copSTMSelect}.
+Generated data could be fit into any GLM-based models with logarithm link for regression coefficients. 
+Fit into \code{copSTM} or \code{copSTMSelect} to get estimates of correlation parameters as well.
+Data can be simulated under two settings (see argument \code{temporal}): 
+1. The temporal setting: Covariates of \eqn{y_t} is generated based on \eqn{y_{t - 1}},
+where \eqn{t} denotes time point. 
+Regression coefficients have the same interpretation as main effects in \code{\link{idpSTM}}.
+2. The non-temporal setting: \eqn{y_t} is considered independent for different t,  
+and covariates are randomly generated from standard Gaussian distribution. 
+For both settings, \eqn{y_t} is generated as a \eqn{K*n^2}-dimensional vector 
+through a Gaussian copula 
+with correlation structure specified in Arguments \code{cor_type} and \code{rho}.
 }
 \seealso{
 \code{\link{copSTM}}, \code{\link{copSTMSelect}}

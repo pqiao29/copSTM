@@ -3,7 +3,7 @@
 
 #include "labeled_pairs.h"
 #include "make_cor.h"
-#include "PoissonRegression.h"
+#include "Regression.h"
 #include "mle.h"
 #include "mle_sub.h"
 #include "boot_penalty.h"
@@ -30,6 +30,7 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
                     const int n, int d,const int t_size, const int K,
                     const arma::mat& xx, const arma::vec& y, const arma::vec& y_0,
                     const arma::vec& beta, const std::vector<double>& rho_v,
+                    int marginal, double dispersion,
                     const int& p, const int& p_main,
                     const std::multimap<int, std::vector<int> >& labeled_pairs,
                     const std::multimap<int, std::vector<int> >& labeled_pairs0, 
@@ -39,10 +40,13 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
   double lik, crt; 
   bool first_prt = true;
   arma::vec se;
+  int tmp_p = p; 
+  if(marginal == 2) --tmp_p; // exclude dispersion parameter
+  
   // override v, OldCriterion, CriterionRecord
-  for(int pp = 1; pp != p; ++pp){
+  for(int pp = 1; pp != tmp_p; ++pp){
     if(!temporal || pp >= p_main || pp % (K + 1) != 0){
-      
+
       v[pp] = 1 - v[pp];
       
       // get criterion for alternative v
@@ -50,11 +54,12 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
       if(v_key_iter == CriterionRecord.end()){ // v has not been recorded
         
         arma::Col<int> v_main(std::vector<int>(v.cbegin(), v.cbegin() + p_main)), 
-        v_rho(std::vector<int>(v.cbegin() + p_main, v.cend()));
+                       v_rho(std::vector<int>(v.cbegin() + p_main, v.cbegin() + tmp_p));
         
         int p_main_sub = sum(v_main), p_sub = p_main_sub + sum(v_rho);
+        if(marginal == 2) ++p_sub; 
         
-        mle_sub(lik, xx, y, beta, rho_v, v_main, v_rho, labeled_pairs, maxit, eps); // override lik
+        mle_sub(lik, xx, y, beta, rho_v, marginal, dispersion, v_main, v_rho, labeled_pairs, maxit, eps); // override lik
         
         // make correlation matrix with zeros in rho
         if(!std::isnan(lik) && !std::isinf(lik)){
@@ -71,9 +76,9 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
           double d_star;
           if(temporal){
             if(Message_prog) Rcpp::Rcout << "Evaluating the " << pp + 1 << "th parameter: ";
-            d_star = boot_CLIC_penalty_sub(y_0, n, K, t_size, beta, se, corr, rho_v, v_main, v_rho, p_main_sub, p_sub, labeled_pairs, B, Message_prog);
+            d_star = boot_CLIC_penalty_sub(y_0, n, K, t_size, beta, se, corr, rho_v, v_main, v_rho, p_main_sub, p_sub, marginal, dispersion, labeled_pairs, B, Message_prog);
           }else{
-            d_star = get_std_err(xx, y, beta, rho_v, t_size, v_main, v_rho, d, se, labeled_pairs0);
+            d_star = get_std_err(xx, y, beta, rho_v, t_size, v_main, v_rho, d, se, labeled_pairs0, marginal, dispersion);
           }
           
           ModelStdErr.insert(std::make_pair(v, se));
@@ -87,11 +92,10 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
             }else{ nn = t_size; }
           }
           crt = - 2*lik + log(nn)*d_star + 2*add_penalty*d_star*log(p_sub);
-          
         }else{
           crt = arma::datum::inf;
         }
-        
+
         // keep record
         CriterionRecord.insert(std::make_pair(v, crt));
         
@@ -124,7 +128,8 @@ void ModelSelection(std::vector<int>& v, double& OldCriterion,
 
 // [[Rcpp::export]]
 Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, 
-                                const int cor_type, int K, int n, const bool temporal, 
+                                const int cor_type, int K, int n, 
+                                int marginal, const bool temporal, 
                                 int ModelCnt, int B, int maxit1, int maxit2, 
                                 const double add_penalty = 0, 
                                 bool Message_prog = true, bool Message_res = true,
@@ -133,20 +138,28 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y,
   // Input xx need to include the 1 column for intercept
   int d = K*n*n, p_main = x.n_cols; 
   // Initialize
-  int tmp_maxit = maxit1;
-  auto ini = PoissonRegression(x, y, maxit1); //overwrite maxit1
-  if(!ini["happyending"]) throw Rcpp::exception("Unsuccessful glm fit.", false);
-  arma::vec beta = ini["paramters"];
-  if(Message_prog) Rcpp::Rcout << "glm initial converged in " << tmp_maxit - maxit1 << " iterations" << std::endl;
+  auto ini = Regression(x, y, marginal, maxit1);
+  arma::vec theta_ini = ini["paramters"];
+  double lik = ini["likelihood"];
+  if(std::isnan(lik) || std::isinf(lik)) throw Rcpp::exception("Unsuccessful glm fit.", false);
   
   //labeled_pairs
   int t_size = y.size()/d, p_rho;
   const std::multimap<int, std::vector<int> > labeled_pairs = get_pairs(K, n, p_rho, t_size, cor_type); //override p_rho
   std::vector<double> rho_v(p_rho, 0.0);
   int p = p_rho + p_main;
+  if(marginal == 2) ++p;
   
   // Full model 
-  double lik = mle(x, y, beta, rho_v, labeled_pairs, maxit1, eps); // override beta0, beta, rho_v
+  arma::vec beta;
+  double dispersion = 1;
+  if( marginal == 1){
+    beta = theta_ini;
+  }else{
+    beta = theta_ini.head(p_main);
+    dispersion = arma::conv_to<double>::from(theta_ini.tail(1));
+  }
+  lik = mle(x, y, beta, rho_v, marginal, dispersion, labeled_pairs, maxit1, eps);
   
   const std::multimap<int, std::vector<int> > labeled_pairs0 = get_pairs(K, n, p_rho, 1, cor_type); 
   arma::mat corr = cor_mat(rho_v, labeled_pairs0, d);
@@ -156,9 +169,9 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y,
   double d_star;
   if(temporal){
     y_0 = y.head(d);
-    d_star = boot_CLIC_penalty(y_0, n, K, t_size, beta, se, corr, rho_v, p_main, p, labeled_pairs, B, Message_prog);
+    d_star = boot_CLIC_penalty(y_0, n, K, t_size, beta, se, corr, rho_v, p_main, p, marginal, dispersion, labeled_pairs, B, Message_prog);
   }else{
-    d_star = get_std_err(x, y, beta, rho_v, t_size, d, se, labeled_pairs0);
+    d_star = get_std_err(x, y, beta, rho_v, t_size, d, se, labeled_pairs0, marginal, dispersion);
   }
   double criterion = - 2*lik + log(t_size)*d_star + 2*add_penalty*d_star*log(p);
   
@@ -174,7 +187,7 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y,
   
   for(int iteration = 0; iteration != ModelCnt; ++iteration){
     ModelSelection( v, criterion, CandidateModels, ModelStdErr, CriterionRecord, B, maxit2, eps, 
-                    temporal, n, d, t_size, K, x, y, y_0, beta, rho_v, p, p_main, 
+                    temporal, n, d, t_size, K, x, y, y_0, beta, rho_v, marginal, dispersion, p, p_main, 
                     labeled_pairs, labeled_pairs0, add_penalty, iteration, Message_prog, cor_type);
     // override v, OldCriterion, CriterionRecord, CandidateModels and ModelStdErr
   }
@@ -200,13 +213,16 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y,
     }
   }
   
-  // fit selected model again ofr output
+  // fit selected model again for output
+  int tmp_p = p; 
+  if(marginal == 2) --tmp_p;
   arma::Col<int> v_main(std::vector<int>(selected.cbegin(), selected.cbegin() + p_main)), 
-                 v_rho(std::vector<int>(selected.cbegin() + p_main, selected.cend()));
-  auto tmp_theta = mle_sub(lik, x, y, beta, rho_v, v_main, v_rho, labeled_pairs, maxit2, eps);
-
+                 v_rho(std::vector<int>(selected.cbegin() + p_main, selected.cbegin() + tmp_p));
+  auto tmp_theta = mle_sub(lik, x, y, beta, rho_v, marginal, dispersion,
+                   v_main, v_rho, labeled_pairs, maxit2, eps); // override lik
+  
   // extract standard error from ModelStdErr
-  if(sum(v_main) + sum(v_rho) != p){
+  if(sum(v_main) + sum(v_rho) != tmp_p){
     auto iter2 = ModelStdErr.find(selected);
     se = iter2->second;
   }
@@ -214,6 +230,7 @@ Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y,
   return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
                             Rcpp::Named("main") = tmp_theta["beta"], 
                             Rcpp::Named("rho") = tmp_theta["rho"], 
+                            Rcpp::Named("dispersion") = tmp_theta["dispersion"], 
                             Rcpp::Named("v") = selected, 
                             Rcpp::Named("std_err") = se);
 }

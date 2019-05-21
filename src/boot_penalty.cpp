@@ -19,6 +19,7 @@ double boot_CLIC_penalty(  const arma::vec& y_0,
                            const arma::mat& cor,   // cor required to be valid correlation matrix! 
                            const vector<double>& rho_v,
                            const int& p_main, const int& p,
+                           int marginal, double dispersion,
                            const multimap<int, vector<int> >& labeled_pairs,
                            int B, bool Message_prog){
   
@@ -30,19 +31,20 @@ double boot_CLIC_penalty(  const arma::vec& y_0,
     
     if(Message_prog && (b % prt == 0)) Rcpp::Rcout << "==";
     
-    Rcpp::List data = boot_data(y_0, n, K, t_size, beta, cor);
+    Rcpp::List data = boot_data(y_0, n, K, t_size, beta, cor, marginal, dispersion);
     const arma::vec &y = data["response"];
     const arma::mat &xx = data["covariates"];
     
     const arma::vec y_minus1 = y - 1;
-    vector<double> lower_bd = bound(xx, y_minus1, beta), 
-                   upper_bd = bound(xx, y, beta);
+    vector<double> lower_bd = bound(xx, y_minus1, beta, marginal, dispersion), 
+                   upper_bd = bound(xx, y, beta, marginal, dispersion);
     
-    vector<vector<double> > upper_bdd = get_bd_deriv_arma(xx, y, true, beta),
-      lower_bdd = get_bd_deriv_arma(xx, y, false, beta);
+    vector<vector<double> > upper_bdd = get_bd_deriv_arma(xx, y, true, beta, marginal, dispersion),
+                            lower_bdd = get_bd_deriv_arma(xx, y, false, beta, marginal, dispersion);
     
     arma::vec tmp_score(p, arma::fill::zeros);
-    score_hessian(tmp_score, H, rho_v, lower_bd, upper_bd, upper_bdd, lower_bdd, labeled_pairs);
+    score_hessian(tmp_score, H, rho_v, lower_bd, upper_bd, 
+                  upper_bdd, lower_bdd, labeled_pairs, marginal);
     J += tmp_score * tmp_score.t();
   }
   H /= B;  J /= B; 
@@ -66,6 +68,7 @@ double boot_CLIC_penalty_sub(  const arma::vec& y_0,
                            const vector<double>& rho_v,
                            const arma::Col<int>& v_main, const arma::Col<int>& v_rho,
                            const int& p_main_sub, const int& p_sub,
+                           int marginal, double dispersion,
                            const multimap<int, vector<int> >& labeled_pairs, 
                            int B, bool Message_prog){
   
@@ -77,19 +80,19 @@ double boot_CLIC_penalty_sub(  const arma::vec& y_0,
     
     if(Message_prog && (b % prt == 0)) Rcpp::Rcout << "==";
     
-    Rcpp::List data = boot_data(y_0, n, K, t_size, beta_sub, cor);
+    Rcpp::List data = boot_data(y_0, n, K, t_size, beta_sub, cor, marginal, dispersion);
     const arma::vec &y = data["response"];
     const arma::mat &xx = data["covariates"];
     
     const arma::vec y_minus1 = y - 1;
-    vector<double> lower_bd = bound(xx, y_minus1, beta_sub), 
-                   upper_bd = bound(xx, y, beta_sub);
+    vector<double> lower_bd = bound(xx, y_minus1, beta_sub, marginal, dispersion), 
+                   upper_bd = bound(xx, y, beta_sub, marginal, dispersion);
     
-    vector<vector<double> >  upper_bdd = get_bd_deriv_arma_sub(xx, y, true, beta_sub, v_main),
-                             lower_bdd = get_bd_deriv_arma_sub(xx, y, false, beta_sub, v_main);
+    vector<vector<double> >  upper_bdd = get_bd_deriv_arma_sub(xx, y, true, beta_sub, v_main, marginal, dispersion),
+                             lower_bdd = get_bd_deriv_arma_sub(xx, y, false, beta_sub, v_main, marginal, dispersion);
     
     arma::vec tmp_score(p_sub, arma::fill::zeros);
-    score_hessian(tmp_score, H, rho_v, v_rho, p_main_sub, p_sub, lower_bd, upper_bd, upper_bdd, lower_bdd, labeled_pairs);
+    score_hessian(tmp_score, H, rho_v, v_rho, p_main_sub, p_sub, lower_bd, upper_bd, upper_bdd, lower_bdd, labeled_pairs, marginal);
     J += tmp_score * tmp_score.t();
   }
   H /= B;  J /= B; 

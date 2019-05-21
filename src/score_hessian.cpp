@@ -11,9 +11,11 @@ void score_hessian(arma::vec& score, arma::mat& hessian, // only adds to score a
                    const std::vector<double>& lower_bd, const std::vector<double>& upper_bd, 
                    const std::vector<std::vector<double> >& upper_bdd, 
                    const std::vector<std::vector<double> >& lower_bdd, 
-                   const std::multimap<int, std::vector<int> >& labeled_pairs){
+                   const std::multimap<int, std::vector<int> >& labeled_pairs, 
+                   int marginal = 1){
   
   int p_main = upper_bdd[0].size(), p = p_main + rho_v.size(); 
+  if(marginal == 2) --p_main; // take out dispersion parameter
   
   for(int lab = 1; lab != rho_v.size() + 1; ++lab){
     
@@ -25,9 +27,11 @@ void score_hessian(arma::vec& score, arma::mat& hessian, // only adds to score a
       arma::vec tmp_scr(p); tmp_scr.fill(0); // component score 
       
       for(int pp = 0; pp != p_main; ++pp){
-        tmp_scr(pp) = score_main_cpp(pair_ind, pp, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
+       tmp_scr(pp) = score_main_cpp(pair_ind, pp, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
       }
-      tmp_scr(p_main + lab - 1) = score_rho_cpp(pair_ind, rho, lower_bd, upper_bd, arma::datum::pi);
+       tmp_scr(p_main + lab - 1) = score_rho_cpp(pair_ind, rho, lower_bd, upper_bd, arma::datum::pi);
+      
+      if(marginal == 2) tmp_scr(p - 1) = score_main_cpp(pair_ind, p_main, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
       
       //update score and hessian
       score += tmp_scr;
@@ -46,7 +50,8 @@ void score_hessian(arma::vec& score, arma::mat& hessian, // only adds to score a
                    const std::vector<double>& lower_bd, const std::vector<double>& upper_bd, 
                    const std::vector<std::vector<double> >& upper_bdd, 
                    const std::vector<std::vector<double> >& lower_bdd, 
-                   const std::multimap<int, std::vector<int> >& labeled_pairs){
+                   const std::multimap<int, std::vector<int> >& labeled_pairs, 
+                   int marginal = 1){
   
   for(int lab = 1; lab != rho_v.size() + 1; ++lab){
     
@@ -71,6 +76,8 @@ void score_hessian(arma::vec& score, arma::mat& hessian, // only adds to score a
         *scr_ptr = score_rho_cpp(pair_ind, rho, lower_bd, upper_bd, arma::datum::pi);
       }
       
+      if(marginal == 2) tmp_scr(p - 1) = score_main_cpp(pair_ind, p_main, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
+      
       //update score and hessian
       score += tmp_scr;
       arma::mat tmp_hes(tmp_scr);
@@ -86,20 +93,23 @@ void score_hessian(arma::vec& score, arma::mat& hessian, // only adds to score a
 double get_std_err(const arma::mat& xx, const arma::vec& y, 
                    const arma::vec& beta, const std::vector<double>& rho_v, 
                    int t_size, int d, arma::vec& se, 
-                   const std::multimap<int, std::vector<int> >& labeled_pairs0){
-  
+                   const std::multimap<int, std::vector<int> >& labeled_pairs0, 
+                   int marginal = 1, double dispersion = 1){
+   
   int p_main = beta.size(), p_rho = rho_v.size(), p = p_main + p_rho;
+  if(marginal == 2) ++p;
+  
   arma::vec score(p, arma::fill::zeros); 
   arma::mat hessian(p, p, arma::fill::zeros); 
   arma::mat score_record(p, t_size);
   
   // Bounds for integrals in Gaussian cdf
   const arma::vec y_minus1 = y - 1;
-  std::vector<double> lower_bd = bound(xx, y_minus1, beta), 
-                      upper_bd = bound(xx, y, beta);
+  std::vector<double> lower_bd = bound(xx, y_minus1, beta, marginal, dispersion), 
+                      upper_bd = bound(xx, y, beta, marginal, dispersion);
   
-  std::vector<std::vector<double> > upper_bdd = get_bd_deriv_arma(xx, y, true, beta),
-                                    lower_bdd = get_bd_deriv_arma(xx, y, false, beta);
+  std::vector<std::vector<double> > upper_bdd = get_bd_deriv_arma(xx, y, true, beta, marginal, dispersion),
+                                    lower_bdd = get_bd_deriv_arma(xx, y, false, beta, marginal, dispersion);
   
   // score, score_record, hessian 
   for(int t = 0; t != t_size; ++t){
@@ -120,12 +130,14 @@ double get_std_err(const arma::mat& xx, const arma::vec& y,
           tmp_scr(pp) = score_main_cpp(pair_ind, pp, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
         }
         tmp_scr(p_main + lab - 1) = score_rho_cpp(pair_ind, rho, lower_bd, upper_bd, arma::datum::pi);
+        if(marginal == 2) tmp_scr(p - 1) = score_main_cpp(pair_ind, p_main, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
         
         //update score and hessian
         score += tmp_scr;  
         score_t += tmp_scr;
         arma::mat tmp_hes(tmp_scr);
         hessian +=  tmp_hes * tmp_hes.t();
+        
       }
     }
     
@@ -149,20 +161,22 @@ double get_std_err(const arma::mat& xx, const arma::vec& y,
                    const arma::vec& beta, std::vector<double> rho_v, const int t_size, 
                    const arma::Col<int>& v_main, const arma::Col<int>& v_rho, 
                    int d, arma::vec& se, 
-                   const std::multimap<int, std::vector<int> >& labeled_pairs0){
+                   const std::multimap<int, std::vector<int> >& labeled_pairs0, 
+                   int marginal = 1, double dispersion = 1){
   // set up
   int p_main = sum(v_main), p = p_main + sum(v_rho);
+  if(marginal == 2) ++p;
   arma::vec beta_sub = beta % v_main;
   arma::vec rho_zeros = arma::vec(rho_v) % v_rho;
   rho_v = arma::conv_to<std::vector<double> >::from(rho_zeros);
   
   // bounds 
   const arma::vec y_minus1 = y - 1;
-  std::vector<double> lower_bd = bound(xx, y_minus1, beta_sub), 
-                      upper_bd = bound(xx, y, beta_sub);
+  std::vector<double> lower_bd = bound(xx, y_minus1, beta_sub, marginal, dispersion), 
+                      upper_bd = bound(xx, y, beta_sub, marginal, dispersion);
   
-  std::vector<std::vector<double> > upper_bdd = get_bd_deriv_arma_sub(xx, y, true, beta_sub, v_main),
-                                    lower_bdd = get_bd_deriv_arma_sub(xx, y, false, beta_sub, v_main);
+  std::vector<std::vector<double> > upper_bdd = get_bd_deriv_arma_sub(xx, y, true, beta_sub, v_main, marginal, dispersion),
+                                    lower_bdd = get_bd_deriv_arma_sub(xx, y, false, beta_sub, v_main, marginal, dispersion);
   
   // score, hessian, score_record 
   arma::vec score(p, arma::fill::zeros); 
@@ -196,6 +210,8 @@ double get_std_err(const arma::mat& xx, const arma::vec& y,
           }
           *scr_ptr = score_rho_cpp(pair_ind, rho, lower_bd, upper_bd, arma::datum::pi);
         }
+        
+        if(marginal == 2) tmp_scr(p - 1) = score_main_cpp(pair_ind, p_main, rho, lower_bd, upper_bd, upper_bdd, lower_bdd);
         
         //update score and hessian
         score += tmp_scr;

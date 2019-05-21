@@ -7,7 +7,9 @@
 make_data(data, n)
 }
 \arguments{
-\item{data}{A matrix with four cloumns: time, x, y, group, where x and y are coordinates of location.}
+\item{data}{Same as the first input in \code{\link{idpSTM}} and \code{\link{idpSTMSelect}}. 
+A matrix with four cloumns (in order): time, x, y, group, where x and y are coordinates of location.
+See the cell growth data as an example.}
 
 \item{n}{An integer number indicating size of the grids. The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)}
 }
@@ -15,7 +17,9 @@ make_data(data, n)
 A list with components: response, covariates, T (the number of time points) and K (the number of groups).
 }
 \description{
-\code{make_data} takes a matrix of spatio-temporal data and returns a reorganized data ready for input of \code{copSTM} or \code{copSTModelSelect}.
+\code{make_data} takes a matrix of grouped spatio-temporal data and returns a reorganized data
+in the form of response and covariates, 
+ready for input of \code{copSTM} or \code{copSTModelSelect}.
 }
 \seealso{
 \code{\link{copSTM}}, \code{\link{copSTMSelect}}

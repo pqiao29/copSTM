@@ -9,7 +9,8 @@
 Rcpp::List sim_data_cpp(const int n, const int K, 
                         bool temporal, const int t_size, 
                         const arma::vec& beta, std::vector<double> rho_v,
-                        const int cor_type, const double y_ini){
+                        const int cor_type, const double y_ini, 
+                        int marginal, double dispersion){
   
   int p_rho, d = n*n*K; 
   arma::vec y_0(d); y_0.fill(y_ini);
@@ -23,7 +24,7 @@ Rcpp::List sim_data_cpp(const int n, const int K,
   if(temporal){
     return boot_data(y_0, n, K, t_size, beta, corr);
   }else{
-    return gen_data(t_size, d, beta, corr);
+    return gen_data(t_size, d, beta, marginal, dispersion, corr);
   }
 } 
 

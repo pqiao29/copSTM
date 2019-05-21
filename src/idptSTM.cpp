@@ -2,7 +2,8 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 #include "grid_ring.h"
-#include "PoissonRegression.h"
+#include "Regression.h"
+#include "inference.h"
 
 // [[Rcpp::plugins(cpp11)]]
 
@@ -51,7 +52,8 @@ Rcpp::List data_indpt(const arma::mat& dat, const int n){
 } 
 
 // [[Rcpp::export]]
-Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n, const int maxit, bool fit_plot){
+Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n, const int marginal, 
+                       const int maxit, bool fit_plot){
   
   /*
    * Requirement of data columns: Timepoint (0, 1, 2, ...), group (1, 2, 3, ...), tile (1, 2, ... n*n)
@@ -66,29 +68,46 @@ Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n, const int maxit, bool 
   int t_size = in_data["T"];
   arma::Mat<int> fitted(K, t_size - 1), obsved(K, t_size - 1);
   
-  arma::rowvec beta0(K); arma::mat beta(K, K); arma::mat se((K + 1), K);
+  arma::rowvec beta0(K), dispersion(K); 
+  arma::mat beta(K, K), se((K + 1), K);
+  arma::rowvec se_dispersion(K);
+  
   int ind_b0 = 0;
   for(int k = 0; k != K; ++k){
-    int tmp_maxit = maxit; bool happy = true;
+    int tmp_maxit = maxit;
+     
     // est
-    int p = x.n_cols;
-    arma::vec theta(p); theta.zeros();
-    theta(0) = log(sum(y.col(k))/y.size());
-    
-    double l = Poisson_Newton(x, y.col(k), theta, tmp_maxit, happy);
+    auto ini = Regression(x, y.col(k), marginal, tmp_maxit);
+    arma::vec theta = ini["paramters"];
+    double l = ini["likelihood"];
+    lik += l;
+    //double l = Poisson_Newton(x, y.col(k), theta, tmp_maxit, happy);
     //if(!happy) throw Rcpp::exception("Unsuccessful glm fit.", false);
 
     beta0(ind_b0++) = theta(0);
-    beta.col(k) = theta.tail(K);
-    lik += l;
+    beta.col(k) = theta.subvec(1, K);
+    if(marginal == 2) dispersion(k) = theta(K + 1);
     
     // std_err 
+    int p; 
+    if(marginal == 1)  p = x.n_cols;
+    if(marginal == 2)  p = x.n_cols + 1;
+    
     arma::mat hessian(p, p);
-    get_hessian(x, y.col(k), theta, hessian);
-    se.col(k) = arma::diagvec(arma::inv_sympd(hessian));
+    arma::rowvec score(p);
+    if(marginal == 1) pois_infc(x, y.col(k), theta, score, hessian);
+    if(marginal == 2) nbinom_infc(x, y.col(k), theta, score, hessian);
+    
+    //get_hessian(x, y.col(k), theta, hessian);
+    if(marginal == 1) se.col(k) = arma::diagvec(arma::inv_sympd(hessian));
+    if(marginal == 2){
+      arma::vec tmp_se = arma::diagvec(arma::inv_sympd(hessian));
+      se.col(k) = tmp_se.head(K + 1);
+      se_dispersion(k) = arma::conv_to<double>::from(tmp_se.tail(1));
+    } 
     
     // for goodness-of-fit curves
-    if(fit_plot){
+    if(fit_plot && marginal == 1){
       int n_lattice = n*n; 
       arma::vec fit_lmd = exp(x * theta);
       fit_lmd.for_each( [](arma::vec::elem_type& l){ l = R::rpois(l); } );
@@ -99,7 +118,7 @@ Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n, const int maxit, bool 
     }
   }
 
-  if(fit_plot){
+  if(fit_plot && marginal == 1){
     return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
                               Rcpp::Named("intercept") = beta0, 
                               Rcpp::Named("main_effects") = beta, 
@@ -107,11 +126,21 @@ Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n, const int maxit, bool 
                               Rcpp::Named("fit") = fitted, 
                               Rcpp::Named("obs") = obsved);
   }else{
-    return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
-                              Rcpp::Named("intercept") = beta0, 
-                              Rcpp::Named("main_effects") = beta, 
-                              Rcpp::Named("se") = se);
+    
+    if(marginal == 2)
+      return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
+                                Rcpp::Named("intercept") = beta0, 
+                                Rcpp::Named("main_effects") = beta, 
+                                Rcpp::Named("dispersion") = dispersion, 
+                                Rcpp::Named("se") = se, 
+                                Rcpp::Named("se_dispersion") = se_dispersion);
+      
   }
+  
+  return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
+                            Rcpp::Named("intercept") = beta0, 
+                            Rcpp::Named("main_effects") = beta, 
+                            Rcpp::Named("se") = se);
   
 }
   

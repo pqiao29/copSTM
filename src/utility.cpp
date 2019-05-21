@@ -43,9 +43,9 @@ double score_main_cpp(const std::vector<int>& pair_ind, const int& par_pos, cons
       t2_down = f_cond_cpp(b1, a1, a2, rho);
     
     double b1_d = upper_bdd[i][par_pos], 
-                              a1_d = lower_bdd[i][par_pos], 
-                                                 b2_d = upper_bdd[j][par_pos], 
-                                                                    a2_d = lower_bdd[j][par_pos];
+           a1_d = lower_bdd[i][par_pos], 
+           b2_d = upper_bdd[j][par_pos], 
+           a2_d = lower_bdd[j][par_pos];
     
     return  (b1_d*t1_up - a1_d*t1_down + b2_d*t2_up - a2_d*t2_down)/(comp_lik);
   }

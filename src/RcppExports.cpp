@@ -6,9 +6,41 @@
 
 using namespace Rcpp;
 
+// bd_unary
+double bd_unary(const arma::vec& xx_row, const double y_i, bool upper, const arma::vec& beta, int marginal, double dispersion);
+RcppExport SEXP _copSTM_bd_unary(SEXP xx_rowSEXP, SEXP y_iSEXP, SEXP upperSEXP, SEXP betaSEXP, SEXP marginalSEXP, SEXP dispersionSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type xx_row(xx_rowSEXP);
+    Rcpp::traits::input_parameter< const double >::type y_i(y_iSEXP);
+    Rcpp::traits::input_parameter< bool >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< int >::type marginal(marginalSEXP);
+    Rcpp::traits::input_parameter< double >::type dispersion(dispersionSEXP);
+    rcpp_result_gen = Rcpp::wrap(bd_unary(xx_row, y_i, upper, beta, marginal, dispersion));
+    return rcpp_result_gen;
+END_RCPP
+}
+// bd_deriv_unary_arma
+std::vector<double> bd_deriv_unary_arma(const arma::vec& xx_row, const double y_i, bool upper, const arma::vec& beta, int marginal, double dispersion);
+RcppExport SEXP _copSTM_bd_deriv_unary_arma(SEXP xx_rowSEXP, SEXP y_iSEXP, SEXP upperSEXP, SEXP betaSEXP, SEXP marginalSEXP, SEXP dispersionSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type xx_row(xx_rowSEXP);
+    Rcpp::traits::input_parameter< const double >::type y_i(y_iSEXP);
+    Rcpp::traits::input_parameter< bool >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< int >::type marginal(marginalSEXP);
+    Rcpp::traits::input_parameter< double >::type dispersion(dispersionSEXP);
+    rcpp_result_gen = Rcpp::wrap(bd_deriv_unary_arma(xx_row, y_i, upper, beta, marginal, dispersion));
+    return rcpp_result_gen;
+END_RCPP
+}
 // copSTModelSelect_cpp
-Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, const int cor_type, int K, int n, const bool temporal, int ModelCnt, int B, int maxit1, int maxit2, const double add_penalty, bool Message_prog, bool Message_res, double eps);
-RcppExport SEXP _copSTM_copSTModelSelect_cpp(SEXP xSEXP, SEXP ySEXP, SEXP cor_typeSEXP, SEXP KSEXP, SEXP nSEXP, SEXP temporalSEXP, SEXP ModelCntSEXP, SEXP BSEXP, SEXP maxit1SEXP, SEXP maxit2SEXP, SEXP add_penaltySEXP, SEXP Message_progSEXP, SEXP Message_resSEXP, SEXP epsSEXP) {
+Rcpp::List copSTModelSelect_cpp(const arma::mat& x, const arma::vec& y, const int cor_type, int K, int n, int marginal, const bool temporal, int ModelCnt, int B, int maxit1, int maxit2, const double add_penalty, bool Message_prog, bool Message_res, double eps);
+RcppExport SEXP _copSTM_copSTModelSelect_cpp(SEXP xSEXP, SEXP ySEXP, SEXP cor_typeSEXP, SEXP KSEXP, SEXP nSEXP, SEXP marginalSEXP, SEXP temporalSEXP, SEXP ModelCntSEXP, SEXP BSEXP, SEXP maxit1SEXP, SEXP maxit2SEXP, SEXP add_penaltySEXP, SEXP Message_progSEXP, SEXP Message_resSEXP, SEXP epsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -17,6 +49,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const int >::type cor_type(cor_typeSEXP);
     Rcpp::traits::input_parameter< int >::type K(KSEXP);
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< int >::type marginal(marginalSEXP);
     Rcpp::traits::input_parameter< const bool >::type temporal(temporalSEXP);
     Rcpp::traits::input_parameter< int >::type ModelCnt(ModelCntSEXP);
     Rcpp::traits::input_parameter< int >::type B(BSEXP);
@@ -26,18 +59,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type Message_prog(Message_progSEXP);
     Rcpp::traits::input_parameter< bool >::type Message_res(Message_resSEXP);
     Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
-    rcpp_result_gen = Rcpp::wrap(copSTModelSelect_cpp(x, y, cor_type, K, n, temporal, ModelCnt, B, maxit1, maxit2, add_penalty, Message_prog, Message_res, eps));
+    rcpp_result_gen = Rcpp::wrap(copSTModelSelect_cpp(x, y, cor_type, K, n, marginal, temporal, ModelCnt, B, maxit1, maxit2, add_penalty, Message_prog, Message_res, eps));
     return rcpp_result_gen;
 END_RCPP
 }
 // copSTM_cpp
-Rcpp::List copSTM_cpp(const arma::mat& x, const arma::vec& y, const bool temporal, const int cor_type, const int K, const int n, int maxit, double eps, bool std_err, int B, bool Message_prog);
-RcppExport SEXP _copSTM_copSTM_cpp(SEXP xSEXP, SEXP ySEXP, SEXP temporalSEXP, SEXP cor_typeSEXP, SEXP KSEXP, SEXP nSEXP, SEXP maxitSEXP, SEXP epsSEXP, SEXP std_errSEXP, SEXP BSEXP, SEXP Message_progSEXP) {
+Rcpp::List copSTM_cpp(const arma::mat& x, const arma::vec& y, int marginal, const bool temporal, const int cor_type, const int K, const int n, int maxit, double eps, bool std_err, int B, bool Message_prog);
+RcppExport SEXP _copSTM_copSTM_cpp(SEXP xSEXP, SEXP ySEXP, SEXP marginalSEXP, SEXP temporalSEXP, SEXP cor_typeSEXP, SEXP KSEXP, SEXP nSEXP, SEXP maxitSEXP, SEXP epsSEXP, SEXP std_errSEXP, SEXP BSEXP, SEXP Message_progSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< int >::type marginal(marginalSEXP);
     Rcpp::traits::input_parameter< const bool >::type temporal(temporalSEXP);
     Rcpp::traits::input_parameter< const int >::type cor_type(cor_typeSEXP);
     Rcpp::traits::input_parameter< const int >::type K(KSEXP);
@@ -47,52 +81,55 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type std_err(std_errSEXP);
     Rcpp::traits::input_parameter< int >::type B(BSEXP);
     Rcpp::traits::input_parameter< bool >::type Message_prog(Message_progSEXP);
-    rcpp_result_gen = Rcpp::wrap(copSTM_cpp(x, y, temporal, cor_type, K, n, maxit, eps, std_err, B, Message_prog));
+    rcpp_result_gen = Rcpp::wrap(copSTM_cpp(x, y, marginal, temporal, cor_type, K, n, maxit, eps, std_err, B, Message_prog));
     return rcpp_result_gen;
 END_RCPP
 }
 // logGLMselect_cpp
-Rcpp::List logGLMselect_cpp(const arma::vec& y, const arma::mat& x, const int maxit, const arma::vec& skip, const int ModelCnt, bool Message);
-RcppExport SEXP _copSTM_logGLMselect_cpp(SEXP ySEXP, SEXP xSEXP, SEXP maxitSEXP, SEXP skipSEXP, SEXP ModelCntSEXP, SEXP MessageSEXP) {
+Rcpp::List logGLMselect_cpp(const arma::vec& y, const arma::mat& x, int marginal, const int maxit, const arma::vec& skip, const int ModelCnt, bool Message);
+RcppExport SEXP _copSTM_logGLMselect_cpp(SEXP ySEXP, SEXP xSEXP, SEXP marginalSEXP, SEXP maxitSEXP, SEXP skipSEXP, SEXP ModelCntSEXP, SEXP MessageSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< int >::type marginal(marginalSEXP);
     Rcpp::traits::input_parameter< const int >::type maxit(maxitSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type skip(skipSEXP);
     Rcpp::traits::input_parameter< const int >::type ModelCnt(ModelCntSEXP);
     Rcpp::traits::input_parameter< bool >::type Message(MessageSEXP);
-    rcpp_result_gen = Rcpp::wrap(logGLMselect_cpp(y, x, maxit, skip, ModelCnt, Message));
+    rcpp_result_gen = Rcpp::wrap(logGLMselect_cpp(y, x, marginal, maxit, skip, ModelCnt, Message));
     return rcpp_result_gen;
 END_RCPP
 }
 // idpSTModelSelection_cpp
-Rcpp::List idpSTModelSelection_cpp(const arma::mat& dat, int n, const int maxit, int ModelCnt, bool Message);
-RcppExport SEXP _copSTM_idpSTModelSelection_cpp(SEXP datSEXP, SEXP nSEXP, SEXP maxitSEXP, SEXP ModelCntSEXP, SEXP MessageSEXP) {
+Rcpp::List idpSTModelSelection_cpp(const arma::mat& dat, int n, int marginal, const int maxit, int ModelCnt, bool Message);
+RcppExport SEXP _copSTM_idpSTModelSelection_cpp(SEXP datSEXP, SEXP nSEXP, SEXP marginalSEXP, SEXP maxitSEXP, SEXP ModelCntSEXP, SEXP MessageSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type dat(datSEXP);
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< int >::type marginal(marginalSEXP);
     Rcpp::traits::input_parameter< const int >::type maxit(maxitSEXP);
     Rcpp::traits::input_parameter< int >::type ModelCnt(ModelCntSEXP);
     Rcpp::traits::input_parameter< bool >::type Message(MessageSEXP);
-    rcpp_result_gen = Rcpp::wrap(idpSTModelSelection_cpp(dat, n, maxit, ModelCnt, Message));
+    rcpp_result_gen = Rcpp::wrap(idpSTModelSelection_cpp(dat, n, marginal, maxit, ModelCnt, Message));
     return rcpp_result_gen;
 END_RCPP
 }
 // idptSTM_cpp
-Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n, const int maxit, bool fit_plot);
-RcppExport SEXP _copSTM_idptSTM_cpp(SEXP datSEXP, SEXP nSEXP, SEXP maxitSEXP, SEXP fit_plotSEXP) {
+Rcpp::List idptSTM_cpp(const arma::mat& dat, const int n, const int marginal, const int maxit, bool fit_plot);
+RcppExport SEXP _copSTM_idptSTM_cpp(SEXP datSEXP, SEXP nSEXP, SEXP marginalSEXP, SEXP maxitSEXP, SEXP fit_plotSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type dat(datSEXP);
     Rcpp::traits::input_parameter< const int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const int >::type marginal(marginalSEXP);
     Rcpp::traits::input_parameter< const int >::type maxit(maxitSEXP);
     Rcpp::traits::input_parameter< bool >::type fit_plot(fit_plotSEXP);
-    rcpp_result_gen = Rcpp::wrap(idptSTM_cpp(dat, n, maxit, fit_plot));
+    rcpp_result_gen = Rcpp::wrap(idptSTM_cpp(dat, n, marginal, maxit, fit_plot));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -123,8 +160,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // sim_data_cpp
-Rcpp::List sim_data_cpp(const int n, const int K, bool temporal, const int t_size, const arma::vec& beta, std::vector<double> rho_v, const int cor_type, const double y_ini);
-RcppExport SEXP _copSTM_sim_data_cpp(SEXP nSEXP, SEXP KSEXP, SEXP temporalSEXP, SEXP t_sizeSEXP, SEXP betaSEXP, SEXP rho_vSEXP, SEXP cor_typeSEXP, SEXP y_iniSEXP) {
+Rcpp::List sim_data_cpp(const int n, const int K, bool temporal, const int t_size, const arma::vec& beta, std::vector<double> rho_v, const int cor_type, const double y_ini, int marginal, double dispersion);
+RcppExport SEXP _copSTM_sim_data_cpp(SEXP nSEXP, SEXP KSEXP, SEXP temporalSEXP, SEXP t_sizeSEXP, SEXP betaSEXP, SEXP rho_vSEXP, SEXP cor_typeSEXP, SEXP y_iniSEXP, SEXP marginalSEXP, SEXP dispersionSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -136,20 +173,24 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::vector<double> >::type rho_v(rho_vSEXP);
     Rcpp::traits::input_parameter< const int >::type cor_type(cor_typeSEXP);
     Rcpp::traits::input_parameter< const double >::type y_ini(y_iniSEXP);
-    rcpp_result_gen = Rcpp::wrap(sim_data_cpp(n, K, temporal, t_size, beta, rho_v, cor_type, y_ini));
+    Rcpp::traits::input_parameter< int >::type marginal(marginalSEXP);
+    Rcpp::traits::input_parameter< double >::type dispersion(dispersionSEXP);
+    rcpp_result_gen = Rcpp::wrap(sim_data_cpp(n, K, temporal, t_size, beta, rho_v, cor_type, y_ini, marginal, dispersion));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_copSTM_copSTModelSelect_cpp", (DL_FUNC) &_copSTM_copSTModelSelect_cpp, 14},
-    {"_copSTM_copSTM_cpp", (DL_FUNC) &_copSTM_copSTM_cpp, 11},
-    {"_copSTM_logGLMselect_cpp", (DL_FUNC) &_copSTM_logGLMselect_cpp, 6},
-    {"_copSTM_idpSTModelSelection_cpp", (DL_FUNC) &_copSTM_idpSTModelSelection_cpp, 5},
-    {"_copSTM_idptSTM_cpp", (DL_FUNC) &_copSTM_idptSTM_cpp, 4},
+    {"_copSTM_bd_unary", (DL_FUNC) &_copSTM_bd_unary, 6},
+    {"_copSTM_bd_deriv_unary_arma", (DL_FUNC) &_copSTM_bd_deriv_unary_arma, 6},
+    {"_copSTM_copSTModelSelect_cpp", (DL_FUNC) &_copSTM_copSTModelSelect_cpp, 15},
+    {"_copSTM_copSTM_cpp", (DL_FUNC) &_copSTM_copSTM_cpp, 12},
+    {"_copSTM_logGLMselect_cpp", (DL_FUNC) &_copSTM_logGLMselect_cpp, 7},
+    {"_copSTM_idpSTModelSelection_cpp", (DL_FUNC) &_copSTM_idpSTModelSelection_cpp, 6},
+    {"_copSTM_idptSTM_cpp", (DL_FUNC) &_copSTM_idptSTM_cpp, 5},
     {"_copSTM_make_cor_label", (DL_FUNC) &_copSTM_make_cor_label, 4},
     {"_copSTM_data_cor", (DL_FUNC) &_copSTM_data_cor, 2},
-    {"_copSTM_sim_data_cpp", (DL_FUNC) &_copSTM_sim_data_cpp, 8},
+    {"_copSTM_sim_data_cpp", (DL_FUNC) &_copSTM_sim_data_cpp, 10},
     {NULL, NULL, 0}
 };
 

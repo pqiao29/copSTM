@@ -13,6 +13,7 @@ double boot_CLIC_penalty(  const arma::vec& y_0,
                            const arma::mat& cor,   
                            const std::vector<double>& rho_v,
                            const int& p_main, const int& p,
+                           int marginal, double dispersion,
                            const std::multimap<int, std::vector<int> >& labeled_pairs, 
                            int B, bool Message_prog);
 
@@ -25,6 +26,7 @@ double boot_CLIC_penalty_sub(  const arma::vec& y_0,
                            const std::vector<double>& rho_v,
                            const arma::Col<int>& v_main, const arma::Col<int>& v_rho,
                            const int& p_main_sub, const int& p_sub,
+                           int marginal, double dispersion,
                            const std::multimap<int, std::vector<int> >& labeled_pairs, 
                            int B, bool Message_prog);
 

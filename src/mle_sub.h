@@ -9,6 +9,7 @@
 
 Rcpp::List mle_sub(double& l, const arma::mat& xx, const arma::vec& y,
                   arma::vec beta, std::vector<double> rho_v,
+                  int marginal, double dispersion, 
                   const arma::Col<int>& v_main, const arma::Col<int>& v_rho,
                   const std::multimap<int, std::vector<int> >& labeled_pairs,
                   int maxit, double eps);

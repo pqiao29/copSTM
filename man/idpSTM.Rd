@@ -4,16 +4,19 @@
 \alias{idpSTM}
 \title{Fit spatio-temporal Model}
 \usage{
-idpSTM(data, n, maxit, fit = FALSE)
+idpSTM(data, n, marginal, maxit = 50, fit = FALSE)
 }
 \arguments{
-\item{data}{A matrix with four cloumns: time, x, y, group, where x and y are coordinates of location.}
+\item{data}{A matrix with four cloumns (in order): time, x, y, group, where x and y are coordinates of location.
+See the cell growth data as an example.}
 
 \item{n}{An integer number indicating size of the grids. The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)}
 
-\item{maxit}{Maximum number of iterations of maximum likelihood estimation.}
+\item{marginal}{Conditional distribution: "pois" for Poisson, "nbinom" for negative binomial.}
 
-\item{fit}{Logical, if TRUE, return fitted values.}
+\item{maxit}{Maximum number of iterations of maximum likelihood estimation (default 50).}
+
+\item{fit}{Logical, if TRUE, return fitted values. (only available for Poisson for now)}
 }
 \value{
 A list with components
@@ -22,20 +25,40 @@ A list with components
 \item \code{coefficients:} A list of parameter estimates: 
                     \itemize{
                       \item \code{intercepts:}  A separate intercept for each group,
-                       \item \code{main_effects:}  Regression parameters indicating temporal impacts on growth between groups.}
+                       \item \code{main_effects:}  Regression coefficients orgainized in a K by K matrix, where K is the number of groups. 
+                       The entry in the ith row, jth column is interpreted as the temporal impact of the precence of the ith group in the neighbourhood
+                        on the growth of the jth group. 
+                       \item \code{dispersion:} Overdispersion parameter if marginal == "nbinom". }
 \item \code{standard_error:}  A list of estimated standard errors, in the same format as \code{coefficients}. 
 }
 }
 \description{
-\code{idpSTM} takes a grouped data with information of spatial location and time point of each observation (typically a cell growth data), 
-and fit a model of spatial neighbourhood impact between groups over time.
+\code{idpSTM} fits an AR(1) temporal model on grouped data with information of space and time.
+The input data is tilled as an n by n lattice and turned into a count data (per tile) 
+before fitting a generallised linear model (GLM) with a logarithmic link, 
+see details in Qiao et al. (2018).
+The conditional distribution can be chosen to be either Poisson or negative binomial.
 }
 \examples{
 n <- 25
 data("cell_growth_data")
-est <- idpSTM(cell_growth_data, n, maxit = 30)
-print("======= Estimates =======")
-print(est$coefficients)
-print("======= Standard errors =======")
-print(est$standard_error)
+est_pois <- idpSTM(cell_growth_data, n, "pois")
+print(est_pois$coefficients$main_effects)
+print(est_pois$standard_error$main_effects)
+
+\dontrun{
+## It's normal to have a few warnings related to sigular matrix inversion
+## when marginal == "nbinom". 
+est_nbinom <- idpSTM(cell_growth_data, n, "nbinom")
+print(est_nbinom$coefficients$main_effects)
+print(est_nbinom$standard_error$main_effects)
+}
+}
+\references{
+{
+P. Qiao, C. Mølck, D. Ferrari, and F. Hollande. (2018) 
+A spatio-temporal model and inference tools for 
+longitudinal count data on multicolor cell growth. 
+The International Journal of Biostatistics.
+}
 }

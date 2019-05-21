@@ -25,6 +25,23 @@ Rcpp::NumericVector rmvpois( const arma::vec& lamvec, const arma::mat& Sigma){
   return ret;
 }
 
+Rcpp::NumericVector rmvnbinom( const arma::vec& lamvec,
+                               double dispersion, 
+                               const arma::mat& Sigma){
+  
+  const size_t d = lamvec.size();
+  arma::vec tmp_mean(d, arma::fill::zeros); 
+  Rcpp::NumericVector XX = Rcpp::wrap(rmvnorm_arma( tmp_mean, Sigma)), ret;
+  
+  for(size_t i = 0; i != d; ++i){
+    double uu = R::pnorm(XX(i), 0, 1, true, false);
+    ret.push_back(R::qnbinom_mu(uu, dispersion, lamvec(i), true, false));
+  }
+  return ret;
+}
+
+
+
 
 #include "grid_ring.h"
 
@@ -57,7 +74,8 @@ void get_covariate(arma::mat& x, int& ind_cov_row,
 
 Rcpp::List boot_data(const arma::vec& y_0, 
                      const int n, const int K, const int t_size, 
-                     const arma::vec& beta, const arma::mat& cor){
+                     const arma::vec& beta, const arma::mat& cor, 
+                     int marginal = 1, double dispersion = 1){
   
   /*
    * require: beta.size == K*(K+1), y_0.size() == n*n*K
@@ -76,13 +94,23 @@ Rcpp::List boot_data(const arma::vec& y_0,
   int ind_res = 0; 
   for(int t = 0; t != t_size - 1; ++t){
     arma::vec lmd_t = x.rows(ind_res, (ind_res + d - 1)) * beta;
-    arma::vec tmp_y = Rcpp::as<arma::vec>(rmvpois(exp(lmd_t), cor));
+    arma::vec tmp_y; 
+    if(marginal == 1){
+      tmp_y = Rcpp::as<arma::vec>(rmvpois(exp(lmd_t), cor));
+    }else{
+      tmp_y = Rcpp::as<arma::vec>(rmvnbinom(exp(lmd_t), dispersion, cor)); 
+    }
     y.subvec(ind_res, (ind_res + d - 1)) = tmp_y;
     ind_res += d;
     get_covariate(x, ind_cov_row, tmp_y, n_lattice, K, nbr);
   }
   arma::vec lmd_t = x.rows(ind_res, (ind_res + d - 1)) * beta;
-  y.subvec(ind_res, (ind_res + d - 1)) = Rcpp::as<arma::vec>(rmvpois(exp(lmd_t), cor));
+  if(marginal == 1){
+    y.subvec(ind_res, (ind_res + d - 1)) = Rcpp::as<arma::vec>(rmvpois(exp(lmd_t), cor));
+  }else{
+    y.subvec(ind_res, (ind_res + d - 1)) = Rcpp::as<arma::vec>(rmvnbinom(exp(lmd_t), dispersion, cor)); 
+  }
+  
 
   return Rcpp::List::create(Rcpp::Named("response") = y,
                             Rcpp::Named("covariates") = x);
@@ -90,6 +118,7 @@ Rcpp::List boot_data(const arma::vec& y_0,
 
 
 Rcpp::List gen_data( int t_size, int d, const arma::vec& beta,
+                     int marginal, double dispersion, 
                      const arma::mat& cor){
   
   int p = beta.size();
@@ -104,7 +133,14 @@ Rcpp::List gen_data( int t_size, int d, const arma::vec& beta,
   
   for( int t = 0; t != t_size; ++t){
     arma::vec tmp_lmd = lmd.subvec(t*d, ((t + 1)*d - 1) );
-    arma::vec tmp_y = rmvpois(tmp_lmd, cor);
+    
+    arma::vec tmp_y;
+    if(marginal == 1){
+      tmp_y = rmvpois(tmp_lmd, cor);
+    }else{
+      tmp_y = rmvnbinom(tmp_lmd, dispersion, cor); 
+    }
+    
     it = std::copy(tmp_y.cbegin(), tmp_y.cend(), it);
   }
   

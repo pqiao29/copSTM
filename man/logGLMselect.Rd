@@ -4,7 +4,7 @@
 \alias{logGLMselect}
 \title{Model selsction of log-GLM}
 \usage{
-logGLMselect(y, x, maxit = 50, skip = NULL, ModelCnt = 20,
+logGLMselect(y, x, marginal, maxit = 50, skip = NULL, ModelCnt = 100,
   Message = T)
 }
 \arguments{
@@ -12,11 +12,13 @@ logGLMselect(y, x, maxit = 50, skip = NULL, ModelCnt = 20,
 
 \item{x}{A matrix of covariates.}
 
-\item{maxit}{Maximum number of iterations of maximum likelihood estimation.}
+\item{marginal}{Conditional distribution: "pois" for Poisson, "nbinom" for negative binomial.}
+
+\item{maxit}{Maximum number of iterations of maximum likelihood estimation (default 50).}
 
 \item{skip}{A vector of indices of predictors to be forced in the selected model.}
 
-\item{ModelCnt}{The number of models to be generated via Gibbs samplling.}
+\item{ModelCnt}{The number of models to be generated via Gibbs samplling (default 100).}
 
 \item{Message}{Logical, if TRUE, prints the top 5 most frequently generated models. (Suggest on)}
 }
@@ -24,29 +26,47 @@ logGLMselect(y, x, maxit = 50, skip = NULL, ModelCnt = 20,
 A list with components
 \itemize{
 \item \code{likelihood:}   Maximized log-likelihood. 
-\item \code{coefficients:} A vector of parameter estimates (the first one being intercept).
+\item \code{coefficients:} A list of regression parameter estimates.
+\itemize{
+                      \item \code{intercepts:} ,
+                       \item \code{main_effects:}  Regression coefficients,
+                       \item \code{dispersion:}  Overdispersion parameter if marginal = "nbinom".
+                       } 
 \item \code{selected_model:}  A binary vector with 1 indicating selected variables and 0 otherwise.
-\item \code{standard_error:}  A vector of estimated standard errors. 
+\item \code{standard_error:}  A list of estimated standard errors in the same formatt as coefficients. 
 }
 }
 \description{
-\code{logGLMselect} performs variable selection on log-GLM using BIC via Gibbs samplling.
+\code{logGLMselect} finds the best model among all possible models. 
+Models are fitted with the generallised linear model (GLM) with logarithmic link, 
+response distribution can be specified as Poisson or Negative binomial. 
+Models are ranked with the Bayesian Information Criterion (BIC). 
+The best models are found using a Gibbs samplling method
+introduced by Qian and Field (2002), which allows very large candidate sets to be adressed.
 }
 \examples{
-set.seed(777)  
-p <- 10      # dimension
-nn <- 3000   # sample size
+## Poisson 
+nn <- 1000
+x <- matrix(rnorm(5*nn), nn, 5)
+intercept <- 1
+true_beta <- c(1, 0, 0, 2, 3)
+mu <- exp(x \%*\% true_beta + intercept)
+y <- sapply(mu, rpois, n = 1)
 
-x <- matrix(0, nn, p)
-for(c in 1:p){
-  x[, c] <- rnorm(nn, (p/5))
-}
-intercept <- 5
-true_beta <- sample(c(-0.2, 0, 0.1), p, replace = TRUE)
-y <- x \%*\% true_beta + intercept 
-y <- sapply(y, exp)
-y <- sapply(y, rpois, n = 1)
-
-obj <- logGLMselect(y, x, skip = NULL, ModelCnt = 500, Message = TRUE)
+res <- suppressWarnings(logGLMselect(y, x, "pois", maxit = 200, ModelCnt = 100, Message = TRUE))
 cat("true model:", c(1, as.numeric(as.logical(true_beta))), "\\n")
+dispersion <- 1.5
+y <- rep(0, nn)
+for(i in 1:nn){
+  y[i] <- rnbinom(1, size = dispersion, mu = mu[i])
+}
+res <- suppressWarnings(logGLMselect(y, x, "nbinom", maxit = 200, ModelCnt = 100, Message = TRUE))
+cat("true model:", c(1, as.numeric(as.logical(true_beta)), 1), "\\n")
+cat("dispersion parameter: ", res$coefficients$dispersion, "\\n")
+}
+\references{
+{
+G. Qian and C. Field. Using mcmc for logistic regression model selection involving large
+number of candidate models. In Monte Carlo and Quasi-Monte Carlo Methods 2000, pages 460–474. Springer, 2002.
+}
 }

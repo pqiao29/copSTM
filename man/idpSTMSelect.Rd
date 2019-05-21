@@ -4,16 +4,20 @@
 \alias{idpSTMSelect}
 \title{Model selsction of spatio-temporal model}
 \usage{
-idpSTMSelect(data, n, maxit, ModelCnt, Message = F)
+idpSTMSelect(data, n, marginal, ModelCnt = 100, maxit = 50,
+  Message = F)
 }
 \arguments{
 \item{data}{A matrix with four cloumns: time, x, y, group, where x and y are coordinates of location.}
 
-\item{n}{An integer number indicating size of the grids. The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)}
+\item{n}{An integer number indicating size of the grids.
+The image is tiled into an n*n grid. (Suggest n >= 6, otherwise neighbourhoods mostly overlapping with each other will lead to highly correlated covariates)}
 
-\item{maxit}{Maximum number of iterations of maximum likelihood estimation.}
+\item{marginal}{Conditional distribution: "pois" for Poisson, "nbinom" for negative binomial.}
 
-\item{ModelCnt}{The number of models to be generated via Gibbs samplling.}
+\item{ModelCnt}{The number of models to be generated via Gibbs samplling (default is 100).}
+
+\item{maxit}{Maximum number of iterations of maximum likelihood estimation (default is 50).}
 
 \item{Message}{Logical, if TRUE, prints the top 5 most frequently generated models.}
 }
@@ -25,22 +29,26 @@ A list with components
                     \itemize{
                       \item \code{intercepts:}  A separate intercept for each group,
                        \item \code{main_effects:}  Regression parameters indicating temporal impacts on growth between groups,
+                       \item \code{dispersion:}  Overdispersion parameters if marginal = "nbinom".
                        }
 \item \code{selected_model:}  A binary vector with 1 indicating selected variables and 0 otherwise.
 \item \code{standard_error:}  A list of estimated standard errors, in the same format as \code{coefficients}. 
+                              Standard errors are reported only for selected parameters, and are 0's otherwise. 
 }
 }
 \description{
-\code{idpSTMSelect} performs variable selection on model \code{idpSTM} using BIC via Gibbs samplling.
+\code{idpSTMSelect} selects the best model on \code{idpSTM} using \code{logGLMselect}
 }
 \examples{
 n <- 25
 data("cell_growth_data") 
-select_est <- idpSTMSelect(cell_growth_data, n, maxit = 30, ModelCnt = 20, Message = FALSE)
-print("======= Selected model =======")
+select_est <- idpSTMSelect(cell_growth_data, n, marginal = "pois", Message = FALSE)
 print(select_est$selected_model)
-print("======= Estimates =======")
-print(select_est$coefficients)
-print("======= Standard errors =======")
-print(select_est$standard_error)
+
+## It's normal to have  warnings related to sigular matrix inversion in solve()
+## when marginal == "nbinom". 
+\dontrun{
+select_est <- idpSTMSelect(cell_growth_data, n, marginal = "nbinom", Message = FALSE)
+print(select_est$selected_model)
+}
 }
