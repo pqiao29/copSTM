@@ -155,23 +155,13 @@ copSTM <- function(x, y, K, n, marginal, cor_type = "both", temporal = TRUE,
   
   if(temporal){
     regres_par <- matrix(res$main, (K + 1), K)
-    
-    if(ct == 4){
-      ret_est <- list("intercept" = regres_par[1, ], "main_effects" = regres_par[-1, ])
-    }else{
-      ret_est <- list("intercept" = regres_par[1, ], "main_effects" = regres_par[-1, ], 
-                      "correlations" = res$rho)
-    }
-    
+    ret_est <- list("intercept" = regres_par[1, ], "main_effects" = regres_par[-1, ])
   }else{
-    
     ret_est <- list("intercept" = res$main[1], "main_effects" = res$main[-1])
-    
-    if(ct != 4) ret_est$correlations <- res$rho
-    
   }
   
-  if(marginal == 2) ret_est$dispersion = res$dispersion
+  if(ct != 4) ret_est$correlations <- res$rho
+  if(marginal == 2) ret_est$dispersion <- res$dispersion
 
   if(ct == 4){
     

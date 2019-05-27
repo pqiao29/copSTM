@@ -146,8 +146,8 @@ double get_std_err(const arma::mat& xx, const arma::vec& y,
   
   // J
   score_record.each_col() -= (score/t_size);
-  arma::mat J = (score_record * score_record.t());
-  
+  arma::mat J = score_record * score_record.t(); 
+ 
   // standard error
   arma::mat tmp_mat = arma::solve(hessian, J);
   arma::mat se_mat = tmp_mat * arma::inv(hessian);

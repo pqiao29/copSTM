@@ -46,7 +46,8 @@ Rcpp::List copSTM_cpp(const arma::mat& x, const arma::vec& y,
     arma::vec se = arma::diagvec(arma::inv_sympd(hessian));
     
     return Rcpp::List::create(Rcpp::Named("likelihood") = lik,
-                              Rcpp::Named("main") = beta_ini, 
+                              Rcpp::Named("main") = beta_ini.head(p - 1), 
+                              Rcpp::Named("dispersion") = beta_ini(p - 1),
                               Rcpp::Named("std_err") = se);
   }
   

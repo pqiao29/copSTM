@@ -17,7 +17,6 @@ tilling <- function(data, n){
   cbind(data[, c(1, 4)], tmp_tile)
 }
 
-
 #' Data organization
 #'
 #' \code{make_data} takes a matrix of grouped spatio-temporal data and returns a reorganized data
