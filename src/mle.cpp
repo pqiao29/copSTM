@@ -44,12 +44,7 @@ double mle(const arma::mat& xx, const arma::vec& y,
     score_hessian(score, hessian, rho_v, lower_bd, upper_bd, 
                   upper_bdd, lower_bdd, labeled_pairs, marginal);
     
-    if(marginal == 1){
-      theta += arma::solve(hessian, score);
-    }else{
-      theta += arma::inv(hessian) * arma::vec(score);
-    }
-    
+    theta += arma::solve(hessian, score);
     beta = theta.head(p_main);
     rho_v = arma::conv_to< std::vector<double> >::from(theta.subvec(p_main, (p_main + p_rho - 1)));  
     if(marginal == 2) dispersion = theta(p - 1);

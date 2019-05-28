@@ -57,12 +57,7 @@ double Newton(const mat& xx, const vec& y, vec& theta,
     }
     
     ++iteration;
-    vec step(p);
-    if(marginal == 1){
-      step = solve(hessian, score.t());
-    }else{
-      step = arma::inv(hessian) * arma::vec(score.t());
-    }
+    vec step = solve(hessian, score.t());
     theta -= step;
     
     double directional_derivative = dot(score, step);
@@ -137,12 +132,7 @@ double Newton(const mat& xx, const vec& y, vec& theta, const uvec& v_k,
       }
     
       ++iteration;
-      vec step(p);
-      if(marginal == 1){
-        step = solve(hessian, score.t());
-      }else{
-        step = arma::inv(hessian) * arma::vec(score.t());
-      }
+      vec step = solve(hessian, score.t());
       theta.elem(find(v_k)) -= step;
     
       double directional_derivative = dot(score, step);

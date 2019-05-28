@@ -47,11 +47,8 @@ Rcpp::List mle_sub(double& l, const arma::mat& xx, const arma::vec& y,
     // Update
     score.zeros(); hessian.zeros();
     score_hessian(score, hessian, rho_v, v_rho, p_main, p, lower_bd, upper_bd, upper_bdd, lower_bdd, labeled_pairs, marginal);
-    if(marginal == 1){
-      theta += arma::solve(hessian, score);
-    }else{
-      theta += arma::inv(hessian) * arma::vec(score);
-    }
+    theta += arma::solve(hessian, score);
+
     
     // theta -> beta_sub, rho_v, dispersion
     arma::vec::const_iterator theta_ptr = theta.cbegin();
